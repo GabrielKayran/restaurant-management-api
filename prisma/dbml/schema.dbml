@@ -1,0 +1,67 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id String [pk]
+  name String [not null]
+  email String [unique, not null]
+  password String [not null]
+  role Role [not null]
+  evaluations Evaluation [not null]
+}
+
+Table Discipline {
+  id String [pk]
+  name String [not null]
+  code String
+  teachers Teacher [not null]
+  Evaluation Evaluation [not null]
+}
+
+Table Teacher {
+  id String [pk]
+  name String [not null]
+  title String
+  disciplines Discipline [not null]
+  evaluations Evaluation [not null]
+}
+
+Table Evaluation {
+  id String [pk]
+  comment String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  disciplineId String [not null]
+  teacherId String [not null]
+  userId String [not null]
+  discipline Discipline [not null]
+  teacher Teacher [not null]
+  user User [not null]
+  scores EvaluationScore [not null]
+}
+
+Table EvaluationScore {
+  id String [pk]
+  criterionId String [not null]
+  note Int [not null]
+  evaluationId String [not null]
+  evaluation Evaluation [not null]
+}
+
+Table TeacherDisciplines {
+  teachersId String [ref: > Teacher.id]
+  disciplinesId String [ref: > Discipline.id]
+}
+
+Enum Role {
+  STUDENT
+  ADMIN
+}
+
+Ref: Evaluation.disciplineId > Discipline.id
+
+Ref: Evaluation.teacherId > Teacher.id
+
+Ref: Evaluation.userId > User.id
+
+Ref: EvaluationScore.evaluationId > Evaluation.id
