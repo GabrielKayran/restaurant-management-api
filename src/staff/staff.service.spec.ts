@@ -56,7 +56,7 @@ describe('StaffService', () => {
       service.createStaff(
         { ...creator, auth: { tenantId: undefined } } as AuthenticatedUser,
         {
-          name: 'Atendente 01',
+          name: 'Staff Member 01',
           email: 'atendente@restaurante.com',
           password: '123456',
           role: UserRole.ATTENDANT,
@@ -71,7 +71,7 @@ describe('StaffService', () => {
 
     await expect(
       service.createStaff(creator, {
-        name: 'Atendente 01',
+        name: 'Staff Member 01',
         email: 'atendente@restaurante.com',
         password: '123456',
         role: UserRole.ATTENDANT,
@@ -88,7 +88,7 @@ describe('StaffService', () => {
 
     await expect(
       service.createStaff(creator, {
-        name: 'Novo Gestor',
+        name: 'New Manager',
         email: 'gestor@restaurante.com',
         password: '123456',
         role: UserRole.MANAGER,
@@ -105,7 +105,7 @@ describe('StaffService', () => {
 
     await expect(
       service.createStaff(creator, {
-        name: 'Owner Secundario',
+        name: 'Secondary Owner',
         email: 'owner2@restaurante.com',
         password: '123456',
         role: UserRole.OWNER,
@@ -135,7 +135,7 @@ describe('StaffService', () => {
 
     await expect(
       service.acceptInvite({
-        token: 'token-invalido',
+        token: 'invalid-token',
         password: '123456',
       }),
     ).rejects.toThrow(NotFoundException);
