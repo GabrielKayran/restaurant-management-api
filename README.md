@@ -352,3 +352,4 @@ npm run docker
 - A documentação agora descreve corretamente o projeto como **sistema de restaurante**.
 - O schema Prisma já representa uma operação realista de restaurante, mesmo que nem todos os módulos HTTP estejam implementados ainda.
 - Os metadados exibidos no Swagger ainda podem estar genéricos internamente e podem ser refinados depois sem impactar a estrutura principal da API.
+- Regras para geração de código por IA: `docs/AI_BACKEND_RULES.md`.

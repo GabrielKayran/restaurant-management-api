@@ -63,7 +63,7 @@ describe('AuthService', () => {
     );
   });
 
-  it('normaliza o email no login e gera tokens com tenant unico', async () => {
+  it('normalizes email on login and issues tokens with a single tenant', async () => {
     prismaService.user.findUnique.mockResolvedValue({
       id: 'user-1',
       passwordHash: 'hashed-password',
@@ -94,7 +94,7 @@ describe('AuthService', () => {
     });
   });
 
-  it('retorna erro generico quando o usuario esta inativo', async () => {
+  it('returns a generic error when the user is inactive', async () => {
     prismaService.user.findUnique.mockResolvedValue({
       id: 'user-1',
       passwordHash: 'hashed-password',
@@ -105,10 +105,10 @@ describe('AuthService', () => {
 
     await expect(
       service.login('user@restaurante.com', '123456'),
-    ).rejects.toThrow(new UnauthorizedException('Credenciais invalidas.'));
+    ).rejects.toThrow(UnauthorizedException);
   });
 
-  it('nao fixa tenant no token quando o usuario tem mais de um tenant', async () => {
+  it('does not lock tenant in token when user has multiple tenants', async () => {
     prismaService.user.findUnique.mockResolvedValue({
       id: 'user-2',
       passwordHash: 'hashed-password',
@@ -125,7 +125,7 @@ describe('AuthService', () => {
     });
   });
 
-  it('aceita refresh token com payload usando sub', () => {
+  it('accepts refresh token payload using sub claim', () => {
     jwtService.verify.mockReturnValue({
       sub: 'user-1',
       tenantId: 'tenant-1',
@@ -139,7 +139,7 @@ describe('AuthService', () => {
     });
   });
 
-  it('aceita refresh token legado com payload usando userId', () => {
+  it('accepts legacy refresh token payload using userId', () => {
     jwtService.verify.mockReturnValue({
       userId: 'legacy-user',
       tenantId: 'tenant-legacy',

@@ -51,7 +51,7 @@ describe('StaffService', () => {
     );
   });
 
-  it('bloqueia criacao quando usuario logado nao tem tenant no token', async () => {
+  it('blocks staff creation when authenticated user has no tenant in token', async () => {
     await expect(
       service.createStaff(
         { ...creator, auth: { tenantId: undefined } } as AuthenticatedUser,
@@ -66,7 +66,7 @@ describe('StaffService', () => {
     ).rejects.toThrow(ForbiddenException);
   });
 
-  it('retorna erro quando unidade nao pertence ao tenant do token', async () => {
+  it('returns error when unit does not belong to token tenant', async () => {
     prisma.restaurantUnit.findFirst.mockResolvedValue(null);
 
     await expect(
@@ -80,7 +80,7 @@ describe('StaffService', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('nao permite manager atribuir role manager', async () => {
+  it('does not allow manager to assign manager role', async () => {
     prisma.restaurantUnit.findFirst.mockResolvedValue({ id: 'unit-1' });
     prisma.userTenantRole.findMany.mockResolvedValue([
       { role: UserRole.MANAGER },
@@ -97,7 +97,7 @@ describe('StaffService', () => {
     ).rejects.toThrow(ForbiddenException);
   });
 
-  it('nao permite criar role fora da lista de staff', async () => {
+  it('does not allow creating role outside allowed staff roles', async () => {
     prisma.restaurantUnit.findFirst.mockResolvedValue({ id: 'unit-1' });
     prisma.userTenantRole.findMany.mockResolvedValue([
       { role: UserRole.OWNER },
@@ -114,7 +114,7 @@ describe('StaffService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('bloqueia convite duplicado pendente no mesmo contexto', async () => {
+  it('blocks duplicate pending invite in the same context', async () => {
     prisma.restaurantUnit.findFirst.mockResolvedValue({ id: 'unit-1' });
     prisma.userTenantRole.findMany.mockResolvedValue([
       { role: UserRole.OWNER },
@@ -130,7 +130,7 @@ describe('StaffService', () => {
     ).rejects.toThrow(ConflictException);
   });
 
-  it('retorna erro ao aceitar convite inexistente', async () => {
+  it('returns error when accepting a non-existent invite', async () => {
     prisma.staffInvite.findUnique.mockResolvedValue(null);
 
     await expect(
