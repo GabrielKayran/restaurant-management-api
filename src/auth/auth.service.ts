@@ -1,9 +1,8 @@
 import { Prisma, User, UserRole } from '@prisma/client';
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
-  NotFoundException,
+  BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -16,6 +15,9 @@ import { SecurityConfig } from '../common/configs/config.interface';
 
 @Injectable()
 export class AuthService {
+  private static readonly INVALID_CREDENTIALS_MESSAGE =
+    'Credenciais invalidas.';
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
@@ -24,36 +26,49 @@ export class AuthService {
   ) {}
 
   async createUser(payload: SignupInput): Promise<Token> {
+    const normalizedEmail = this.normalizeEmail(payload.email);
+    const normalizedName = this.normalizeRequiredField(payload.name, 'nome');
+    const normalizedTenantName = this.normalizeRequiredField(
+      payload.tenantName,
+      'tenant',
+    );
+    const normalizedUnitName = this.normalizeRequiredField(
+      payload.unitName,
+      'unidade',
+    );
+    const normalizedPhone = this.normalizeOptionalField(payload.phone);
     const hashedPassword = await this.passwordService.hashPassword(
       payload.password,
     );
-    const tenantSlug = this.slugify(payload.tenantName);
-    const unitSlug = this.slugify(`${payload.tenantName}-${payload.unitName}`);
+    const tenantSlug = this.slugify(normalizedTenantName);
+    const unitSlug = this.slugify(
+      `${normalizedTenantName}-${normalizedUnitName}`,
+    );
 
     try {
       const result = await this.prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: {
-            name: payload.name,
-            email: payload.email.toLowerCase(),
+            name: normalizedName,
+            email: normalizedEmail,
             passwordHash: hashedPassword,
           },
         });
 
         const tenant = await tx.tenant.create({
           data: {
-            name: payload.tenantName,
+            name: normalizedTenantName,
             slug: tenantSlug,
-            phone: payload.phone,
+            phone: normalizedPhone,
           },
         });
 
         const unit = await tx.restaurantUnit.create({
           data: {
             tenantId: tenant.id,
-            name: payload.unitName,
+            name: normalizedUnitName,
             slug: unitSlug,
-            phone: payload.phone,
+            phone: normalizedPhone,
           },
         });
 
@@ -94,13 +109,20 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<Token> {
+    const normalizedEmail = this.normalizeEmail(email);
     const user = await this.prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-      include: { tenantRoles: true },
+      where: { email: normalizedEmail },
+      include: {
+        tenantRoles: {
+          select: {
+            tenantId: true,
+          },
+        },
+      },
     });
 
     if (!user) {
-      throw new NotFoundException('As credenciais informadas sao invalidas.');
+      throw new UnauthorizedException(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     const passwordValid = await this.passwordService.validatePassword(
@@ -108,13 +130,13 @@ export class AuthService {
       user.passwordHash,
     );
 
-    if (!passwordValid) {
-      throw new BadRequestException('As credenciais informadas sao invalidas.');
+    if (!passwordValid || !user.isActive) {
+      throw new UnauthorizedException(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     return this.generateTokens({
       userId: user.id,
-      tenantId: user.tenantRoles[0]?.tenantId,
+      tenantId: this.resolveTenantId(user.tenantRoles),
     });
   }
 
@@ -158,22 +180,30 @@ export class AuthService {
   }
 
   refreshToken(token: string): Token {
+    let payload: { sub?: string; userId?: string; tenantId?: string };
+
     try {
-      const { userId, tenantId } = this.jwtService.verify(token, {
+      payload = this.jwtService.verify(token, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
       });
-
-      return this.generateTokens({ userId, tenantId });
     } catch {
       throw new UnauthorizedException();
     }
+
+    const userId = payload.sub ?? payload.userId;
+
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
+
+    return this.generateTokens({ userId, tenantId: payload.tenantId });
   }
 
   private generateAccessToken(payload: {
     userId: string;
     tenantId?: string;
   }): string {
-    return this.jwtService.sign(payload);
+    return this.jwtService.sign(this.buildJwtPayload(payload));
   }
 
   private generateRefreshToken(payload: {
@@ -182,10 +212,56 @@ export class AuthService {
   }): string {
     const securityConfig = this.configService.get<SecurityConfig>('security');
 
-    return this.jwtService.sign(payload, {
+    return this.jwtService.sign(this.buildJwtPayload(payload), {
       secret: this.configService.get('JWT_REFRESH_SECRET'),
       expiresIn: securityConfig.refreshIn,
     });
+  }
+
+  private buildJwtPayload(payload: { userId: string; tenantId?: string }): {
+    sub: string;
+    tenantId?: string;
+  } {
+    return {
+      sub: payload.userId,
+      tenantId: payload.tenantId,
+    };
+  }
+
+  private resolveTenantId(
+    tenantRoles: Array<{
+      tenantId: string;
+    }>,
+  ): string | undefined {
+    const tenantIds = [
+      ...new Set(tenantRoles.map((tenantRole) => tenantRole.tenantId)),
+    ].sort();
+
+    if (tenantIds.length === 1) {
+      return tenantIds[0];
+    }
+
+    return undefined;
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  private normalizeRequiredField(value: string, fieldName: string): string {
+    const normalizedValue = value.trim();
+
+    if (!normalizedValue) {
+      throw new BadRequestException(`O campo ${fieldName} e obrigatorio.`);
+    }
+
+    return normalizedValue;
+  }
+
+  private normalizeOptionalField(value?: string): string | undefined {
+    const normalizedValue = value?.trim();
+
+    return normalizedValue ? normalizedValue : undefined;
   }
 
   private slugify(value: string): string {

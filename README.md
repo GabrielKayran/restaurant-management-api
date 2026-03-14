@@ -232,6 +232,11 @@ Para testar rotas protegidas:
 | `POST` | `/auth/login` | Autentica usuário e retorna `accessToken` e `refreshToken` |
 | `POST` | `/auth/refresh` | Gera novo par de tokens a partir do refresh token |
 | `GET` | `/auth/me` | Retorna o usuário autenticado |
+| `POST` | `/staff` | Cadastra colaborador interno (OWNER/MANAGER) |
+| `POST` | `/staff/invite` | Gera convite para colaborador (OWNER/MANAGER) |
+| `POST` | `/staff/accept-invite` | Aceita convite e ativa vínculo do colaborador |
+| `GET` | `/staff` | Lista colaboradores do tenant atual |
+| `PATCH` | `/staff/:userId/status` | Ativa/desativa colaborador do tenant |
 
 ---
 
@@ -264,6 +269,27 @@ Para testar rotas protegidas:
 ```json
 {
   "refreshToken": "SEU_REFRESH_TOKEN"
+}
+```
+
+### `POST /staff/invite`
+
+```json
+{
+  "email": "atendente@restaurante.com",
+  "role": "ATTENDANT",
+  "unitId": "uuid-da-unidade",
+  "expiresInHours": 72
+}
+```
+
+### `POST /staff/accept-invite`
+
+```json
+{
+  "token": "TOKEN_DE_CONVITE",
+  "password": "123456",
+  "name": "Carlos Lima"
 }
 ```
 

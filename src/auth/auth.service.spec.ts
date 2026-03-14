@@ -1,0 +1,159 @@
+import { UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from 'nestjs-prisma';
+import { AuthService } from './auth.service';
+import { PasswordService } from './password.service';
+
+describe('AuthService', () => {
+  let service: AuthService;
+  let jwtService: jest.Mocked<JwtService>;
+  let prismaService: {
+    user: {
+      findUnique: jest.Mock;
+    };
+  };
+  let passwordService: {
+    hashPassword: jest.Mock;
+    validatePassword: jest.Mock;
+  };
+  let configService: {
+    get: jest.Mock;
+  };
+
+  beforeEach(() => {
+    jwtService = {
+      sign: jest.fn(
+        (payload: { sub: string; tenantId?: string }, options?: object) =>
+          options ? 'refresh-token' : 'access-token',
+      ),
+      verify: jest.fn(),
+    } as unknown as jest.Mocked<JwtService>;
+
+    prismaService = {
+      user: {
+        findUnique: jest.fn(),
+      },
+    };
+
+    passwordService = {
+      hashPassword: jest.fn(),
+      validatePassword: jest.fn(),
+    };
+
+    configService = {
+      get: jest.fn((key: string) => {
+        if (key === 'security') {
+          return { refreshIn: '7d' };
+        }
+
+        if (key === 'JWT_REFRESH_SECRET') {
+          return 'refresh-secret';
+        }
+
+        return undefined;
+      }),
+    };
+
+    service = new AuthService(
+      jwtService,
+      prismaService as unknown as PrismaService,
+      passwordService as unknown as PasswordService,
+      configService as unknown as ConfigService,
+    );
+  });
+
+  it('normaliza o email no login e gera tokens com tenant unico', async () => {
+    prismaService.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      passwordHash: 'hashed-password',
+      isActive: true,
+      tenantRoles: [{ tenantId: 'tenant-1' }, { tenantId: 'tenant-1' }],
+    });
+    passwordService.validatePassword.mockResolvedValue(true);
+
+    const result = await service.login('  OWNER@RESTAURANTE.COM  ', '123456');
+
+    expect(prismaService.user.findUnique).toHaveBeenCalledWith({
+      where: { email: 'owner@restaurante.com' },
+      include: {
+        tenantRoles: {
+          select: {
+            tenantId: true,
+          },
+        },
+      },
+    });
+    expect(result).toEqual({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+    expect(jwtService.sign).toHaveBeenNthCalledWith(1, {
+      sub: 'user-1',
+      tenantId: 'tenant-1',
+    });
+  });
+
+  it('retorna erro generico quando o usuario esta inativo', async () => {
+    prismaService.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      passwordHash: 'hashed-password',
+      isActive: false,
+      tenantRoles: [{ tenantId: 'tenant-1' }],
+    });
+    passwordService.validatePassword.mockResolvedValue(true);
+
+    await expect(
+      service.login('user@restaurante.com', '123456'),
+    ).rejects.toThrow(new UnauthorizedException('Credenciais invalidas.'));
+  });
+
+  it('nao fixa tenant no token quando o usuario tem mais de um tenant', async () => {
+    prismaService.user.findUnique.mockResolvedValue({
+      id: 'user-2',
+      passwordHash: 'hashed-password',
+      isActive: true,
+      tenantRoles: [{ tenantId: 'tenant-2' }, { tenantId: 'tenant-1' }],
+    });
+    passwordService.validatePassword.mockResolvedValue(true);
+
+    await service.login('multi@restaurante.com', '123456');
+
+    expect(jwtService.sign).toHaveBeenNthCalledWith(1, {
+      sub: 'user-2',
+      tenantId: undefined,
+    });
+  });
+
+  it('aceita refresh token com payload usando sub', () => {
+    jwtService.verify.mockReturnValue({
+      sub: 'user-1',
+      tenantId: 'tenant-1',
+    } as never);
+
+    const result = service.refreshToken('valid-refresh-token');
+
+    expect(result).toEqual({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+  });
+
+  it('aceita refresh token legado com payload usando userId', () => {
+    jwtService.verify.mockReturnValue({
+      userId: 'legacy-user',
+      tenantId: 'tenant-legacy',
+    } as never);
+
+    const result = service.refreshToken('legacy-refresh-token');
+
+    expect(result).toEqual({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+    expect(jwtService.sign).toHaveBeenNthCalledWith(1, {
+      sub: 'legacy-user',
+      tenantId: 'tenant-legacy',
+    });
+  });
+});
