@@ -1,18 +1,18 @@
-import { Prisma, User, Role } from '@prisma/client';
+import { Prisma, User, UserRole } from '@prisma/client';
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
   ConflictException,
+  Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from 'nestjs-prisma';
 import { PasswordService } from './password.service';
 import { SignupInput } from './dto/signup.input';
 import { Token } from './models/token.model';
 import { SecurityConfig } from '../common/configs/config.interface';
-import { PrismaService } from 'nestjs-prisma';
 
 @Injectable()
 export class AuthService {
@@ -27,55 +27,120 @@ export class AuthService {
     const hashedPassword = await this.passwordService.hashPassword(
       payload.password,
     );
-
-    const role = this.isAdminEmail(payload.email) ? Role.ADMIN : Role.STUDENT;
+    const tenantSlug = this.slugify(payload.tenantName);
+    const unitSlug = this.slugify(`${payload.tenantName}-${payload.unitName}`);
 
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          name: payload.name,
-          email: payload.email,
-          password: hashedPassword,
-          role,
-        },
+      const result = await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            name: payload.name,
+            email: payload.email.toLowerCase(),
+            passwordHash: hashedPassword,
+          },
+        });
+
+        const tenant = await tx.tenant.create({
+          data: {
+            name: payload.tenantName,
+            slug: tenantSlug,
+            phone: payload.phone,
+          },
+        });
+
+        const unit = await tx.restaurantUnit.create({
+          data: {
+            tenantId: tenant.id,
+            name: payload.unitName,
+            slug: unitSlug,
+            phone: payload.phone,
+          },
+        });
+
+        await tx.userTenantRole.create({
+          data: {
+            userId: user.id,
+            tenantId: tenant.id,
+            role: UserRole.OWNER,
+          },
+        });
+
+        await tx.userUnitRole.create({
+          data: {
+            userId: user.id,
+            unitId: unit.id,
+            role: UserRole.OWNER,
+          },
+        });
+
+        return { user, tenant };
       });
 
-      return this.generateTokens({ userId: user.id });
-    } catch (e) {
+      return this.generateTokens({
+        userId: result.user.id,
+        tenantId: result.tenant.id,
+      });
+    } catch (error) {
       if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === 'P2002'
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
       ) {
-        throw new ConflictException('Este e-mail já está em uso.');
+        throw new ConflictException(
+          'Email ou identificador do tenant/unidade ja esta em uso.',
+        );
       }
-      throw e;
+      throw error;
     }
   }
 
   async login(email: string, password: string): Promise<Token> {
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() },
+      include: { tenantRoles: true },
     });
 
     if (!user) {
-      throw new NotFoundException(`As credenciais informadas são inválidas`);
+      throw new NotFoundException('As credenciais informadas sao invalidas.');
     }
 
     const passwordValid = await this.passwordService.validatePassword(
       password,
-      user.password,
+      user.passwordHash,
     );
 
     if (!passwordValid) {
-      throw new BadRequestException('As credenciais informadas são inválidas');
+      throw new BadRequestException('As credenciais informadas sao invalidas.');
     }
 
-    return this.generateTokens({ userId: user.id });
+    return this.generateTokens({
+      userId: user.id,
+      tenantId: user.tenantRoles[0]?.tenantId,
+    });
   }
 
   async validateUser(userId: string): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException();
+    }
+
+    return user;
+  }
+
+  async getMe(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        tenantRoles: {
+          select: {
+            tenantId: true,
+            role: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -85,23 +150,36 @@ export class AuthService {
     return user;
   }
 
-  generateTokens(payload: { userId: string }): Token {
+  generateTokens(payload: { userId: string; tenantId?: string }): Token {
     return {
       accessToken: this.generateAccessToken(payload),
       refreshToken: this.generateRefreshToken(payload),
     };
   }
 
-  private isAdminEmail(email: string): boolean {
-    const adminEmailPattern = /@admin(\.|$)/i;
-    return adminEmailPattern.test(email);
+  refreshToken(token: string): Token {
+    try {
+      const { userId, tenantId } = this.jwtService.verify(token, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+      });
+
+      return this.generateTokens({ userId, tenantId });
+    } catch {
+      throw new UnauthorizedException();
+    }
   }
 
-  private generateAccessToken(payload: { userId: string }): string {
+  private generateAccessToken(payload: {
+    userId: string;
+    tenantId?: string;
+  }): string {
     return this.jwtService.sign(payload);
   }
 
-  private generateRefreshToken(payload: { userId: string }): string {
+  private generateRefreshToken(payload: {
+    userId: string;
+    tenantId?: string;
+  }): string {
     const securityConfig = this.configService.get<SecurityConfig>('security');
 
     return this.jwtService.sign(payload, {
@@ -110,15 +188,12 @@ export class AuthService {
     });
   }
 
-  refreshToken(token: string): Token {
-    try {
-      const { userId } = this.jwtService.verify(token, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-      });
-
-      return this.generateTokens({ userId });
-    } catch {
-      throw new UnauthorizedException();
-    }
+  private slugify(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 }

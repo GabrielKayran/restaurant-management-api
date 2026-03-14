@@ -1,11 +1,6 @@
 export interface JwtDto {
   userId: string;
-  /**
-   * Issued at
-   */
+  tenantId?: string;
   iat: number;
-  /**
-   * Expiration time
-   */
   exp: number;
 }

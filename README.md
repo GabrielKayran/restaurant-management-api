@@ -1,69 +1,129 @@
-# 🎓 AvaliaProf API
+# 🍽️ Restaurant Management API
 
-API REST para avaliação anônima de professores, desenvolvida com **NestJS**, **Prisma** e **PostgreSQL**, com autenticação JWT, documentação via Swagger e foco em boas práticas de backend.
+API REST para gestão de restaurantes, desenvolvida com **NestJS**, **Prisma** e **PostgreSQL**.
 
-> Projeto desenvolvido com fins acadêmicos e educacionais, simulando um sistema real de avaliações institucionais.
+O projeto já possui a base de autenticação multi-tenant funcionando e um **schema Prisma completo** para operação de restaurante, incluindo catálogo, mesas, pedidos, delivery, estoque, receitas, pagamentos e caixa.
+
+> Status atual: a API expõe endpoints de onboarding/autenticação e health check. Os demais módulos do domínio já estão modelados no banco e prontos para evolução na camada HTTP.
 
 ---
 
-## 🚀 Tecnologias Utilizadas
+## ✅ Visão geral
 
-- **Node.js** 
-- **NestJS**
+Este repositório foi reorganizado para ser a base de um sistema de restaurante com foco em:
+
+- **multi-tenant** por grupo/restaurante
+- **multiunidade** por loja/filial
+- **autenticação JWT** com access token e refresh token
+- **onboarding de tenant + unidade inicial**
+- **modelagem pronta** para operação de salão, balcão e delivery
+- **documentação Swagger**
+- **integração com PostgreSQL via Prisma**
+
+---
+
+## 🚀 Stack
+
+- **Node.js 18+**
+- **NestJS 10**
 - **TypeScript**
 - **Prisma ORM**
-- **PostgreSQL**
-- **JWT (Access & Refresh Token)**
-- **Swagger (OpenAPI)**
-- **Docker (Postgres local)**
+- **PostgreSQL 15**
+- **JWT**
+- **Swagger / OpenAPI**
+- **Docker Compose**
 
 ---
 
-## 📌 Funcionalidades
+## 🧩 Domínio modelado no banco
 
-### 🔐 Autenticação
-- Cadastro de usuários (STUDENT)
-- Login com JWT
-- Refresh Token
-- Endpoint `/me` protegido
-- Controle de acesso por role
+O arquivo `prisma/schema.prisma` já cobre as principais entidades de um sistema de gestão de restaurante:
 
-### 👨‍🏫 Gerenciamento de Professores
-- CRUD completo de professores (Create, Read, Update, Delete)
-- Listar professores com paginação
-- Obter detalhes de um professor
-- Histórico de avaliações por professor
+### Estrutura organizacional
+- `Tenant`
+- `RestaurantUnit`
+- `User`
+- `UserTenantRole`
+- `UserUnitRole`
 
-### 📚 Gerenciamento de Disciplinas
-- CRUD completo de disciplinas
-- Listar disciplinas com paginação
-- Código único de disciplina (opcional)
-- Relacionamento com professores
+### Catálogo e cardápio
+- `Category`
+- `Product`
+- `ProductVariant`
+- `ProductOptionGroup`
+- `ProductOption`
+- `ProductPrice`
 
-### 📝 Avaliações
-- Criar avaliação de professor
-- Avaliar por critérios (didática, assiduidade, etc.)
-- Listar minhas avaliações com paginação
-- Listar avaliações por professor com paginação
-- Calcular média por critério
-- Sistema de comentários anônimos
+### Atendimento e pedidos
+- `Customer`
+- `Address`
+- `RestaurantTable`
+- `TableSession`
+- `Order`
+- `OrderItem`
+- `OrderItemOption`
+- `OrderStatusHistory`
+- `Courier`
+- `DeliveryZone`
+- `DeliveryFeeRule`
+- `Payment`
+
+### Estoque e produção
+- `Ingredient`
+- `StockItem`
+- `StockMovement`
+- `Recipe`
+- `RecipeItem`
+- `Supplier`
+
+### Financeiro
+- `CashRegister`
+- `CashMovement`
+- `Expense`
+
+Também já existem enums para perfis de acesso, tipo/status do pedido, status de pagamento, movimentações de estoque e caixa.
 
 ---
 
-## 🧠 Arquitetura
+## 📌 Funcionalidades já implementadas
 
-- **REST API**
-- **JWT Stateless Authentication**
-- **DTOs com validação**
-- **Separação clara de camadas**
-- **Prisma com integridade referencial**
-- **Swagger bem documentado**
+### 🔐 Autenticação e onboarding
+- cadastro do usuário proprietário (`OWNER`)
+- criação automática do `Tenant`
+- criação automática da primeira `RestaurantUnit`
+- associação de papéis do usuário no tenant e na unidade
+- login com JWT
+- refresh token
+- endpoint autenticado para consultar o usuário atual
+
+### ❤️ Observabilidade básica
+- endpoint `GET /health`
+- Swagger habilitado em `/api`
+- validação global com `ValidationPipe`
+- filtro global para exceções do Prisma
+- CORS habilitado
 
 ---
 
-## 📂 Estrutura do Projeto
+## 🛣️ Roadmap natural do projeto
 
-```bash
+Com base no schema atual, a evolução esperada da API inclui módulos como:
+
+- gestão de categorias e produtos
+- configuração de variantes e opcionais
+- cadastro de clientes e endereços
+- gestão de mesas e sessões de mesa
+- criação e acompanhamento de pedidos
+- fluxo de delivery e entregadores
+- controle de estoque e fichas técnicas
+- pagamentos, caixa e despesas
+- permissões por tenant e unidade
+
+---
+
+## 📂 Estrutura atual do projeto
+
+```text
 src/
 ├── auth/
 │   ├── auth.controller.ts
@@ -72,56 +132,15 @@ src/
 │   ├── jwt.strategy.ts
 │   ├── password.service.ts
 │   ├── decorators/
-│   │   └── current-user.decorator.ts
 │   ├── dto/
-│   │   ├── jwt.dto.ts
-│   │   ├── login.input.ts
-│   │   └── signup.input.ts
 │   ├── guards/
-│   │   └── jwt-auth.guard.ts
 │   └── models/
-│       └── token.model.ts
-│
-├── disciplines/
-│   ├── disciplines.controller.ts
-│   ├── disciplines.module.ts
-│   ├── disciplines.service.ts
-│   ├── disciplines.service.spec.ts
-│   └── dto/
-│       ├── create-discipline.dto.ts
-│       └── update-discipline.dto.ts
-│
-├── teachers/
-│   ├── teachers.controller.ts
-│   ├── teachers.module.ts
-│   ├── teachers.service.ts
-│   ├── teachers.service.spec.ts
-│   └── dto/
-│       ├── create-teacher.dto.ts
-│       └── update-teacher.dto.ts
-│
-├── evaluations/
-│   ├── evaluations.controller.ts
-│   ├── evaluations.module.ts
-│   ├── evaluations.service.ts
-│   ├── evaluations.service.spec.ts
-│   └── dto/
-│       └── create-evaluation.dto.ts
-│
 ├── common/
 │   ├── configs/
-│   │   ├── config.interface.ts
-│   │   └── config.ts
-│   ├── decorators/
-│   ├── models/
+│   ├── filters/
 │   └── pagination/
-│       ├── pagination.dto.ts
-│       ├── pagination.response.ts
-│       └── index.ts
-│
 ├── app.controller.ts
 ├── app.module.ts
-├── app.service.ts
 ├── main.ts
 └── metadata.ts
 
@@ -133,264 +152,177 @@ prisma/
 
 ---
 
-## ⚙️ Como Rodar Localmente
+## ⚙️ Como rodar localmente
 
-### 1️⃣ Clonar o repositório
+### 1. Clonar o repositório
 
 ```bash
-git clone [https://github.com/GabrielKayran/avaliaprof-api](https://github.com/GabrielKayran/avaliaprof-api)
-cd avaliaprof-api
+git clone https://github.com/GabrielKayran/restaurant-management-api
+cd restaurant-management-api
 ```
 
-### 2️⃣ Instalar dependências
+### 2. Instalar dependências
 
 ```bash
 npm install
 ```
 
-### 3️⃣ Subir o PostgreSQL com Docker
+### 3. Criar o arquivo `.env`
 
-```bash
-docker run --name avaliaprof-postgres \
-  -e POSTGRES_USER=prisma \
-  -e POSTGRES_PASSWORD=prisma \
-  -e POSTGRES_DB=avaliaprof \
-  -p 5432:5432 \
-  -d postgres:15
-```
-
-### 4️⃣ Configurar variáveis de ambiente
-
-Crie um arquivo `.env` na raiz do projeto:
+Exemplo mínimo:
 
 ```env
-DATABASE_URL=postgresql://prisma:prisma@localhost:5432/avaliaprof?schema=public
+POSTGRES_USER=prisma
+POSTGRES_PASSWORD=prisma
+POSTGRES_DB=restaurant_management
+
+DATABASE_URL=postgresql://prisma:prisma@localhost:5432/restaurant_management?schema=public
 
 JWT_ACCESS_SECRET=dev_access_secret
 JWT_REFRESH_SECRET=dev_refresh_secret
 
-JWT_ACCESS_EXPIRES_IN=1h
+JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 
 PORT=3000
 ```
 
-### 5️⃣ Rodar migrations e seed
+### 4. Subir o banco com Docker Compose
 
 ```bash
-npx prisma migrate dev
-npx prisma db seed
+docker compose -f docker-compose.db.yml up -d
 ```
 
-### 6️⃣ Rodar a API
+### 5. Aplicar o schema e popular dados iniciais
+
+```bash
+npx prisma db push
+npm run seed
+```
+
+### 6. Iniciar a API
 
 ```bash
 npm run start:dev
 ```
 
-### 7️⃣ Rodar testes unitários (Opcional)
+---
 
-```bash
-# Todos os testes
-npm test
+## 📚 Swagger
 
-# Testes específicos
-npm test -- evaluations.service.spec
-npm test -- disciplines.service.spec
-npm test -- teachers.service.spec
+Com a aplicação rodando, acesse:
+
+- `http://localhost:3000/api`
+
+Para testar rotas protegidas:
+
+1. faça login em `POST /auth/login`
+2. copie o `accessToken`
+3. clique em **Authorize**
+4. informe o token como `Bearer SEU_TOKEN`
+
+---
+
+## 📡 Endpoints disponíveis hoje
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `GET` | `/health` | Health check da aplicação |
+| `POST` | `/auth/signup` | Cria usuário owner + tenant + unidade inicial |
+| `POST` | `/auth/login` | Autentica usuário e retorna `accessToken` e `refreshToken` |
+| `POST` | `/auth/refresh` | Gera novo par de tokens a partir do refresh token |
+| `GET` | `/auth/me` | Retorna o usuário autenticado |
+
+---
+
+## 🧪 Exemplos de payload
+
+### `POST /auth/signup`
+
+```json
+{
+  "name": "Joao Silva",
+  "email": "joao@restaurante.com",
+  "password": "123456",
+  "tenantName": "Grupo Sabor Mineiro",
+  "unitName": "Loja Centro",
+  "phone": "3433310001"
+}
+```
+
+### `POST /auth/login`
+
+```json
+{
+  "email": "joao@restaurante.com",
+  "password": "123456"
+}
+```
+
+### `POST /auth/refresh`
+
+```json
+{
+  "refreshToken": "SEU_REFRESH_TOKEN"
+}
 ```
 
 ---
 
-## 📚 Documentação (Swagger)
+## 🌱 Seed disponível
 
-Acesse: **[http://localhost:3000/api](http://localhost:3000/api)**
+O arquivo `prisma/seed.ts` cria uma base inicial com:
 
-- Todos os endpoints documentados
-- Autenticação via botão **Authorize**
-- Testes diretos pela interface
+- tenant `Grupo Sabor Mineiro`
+- unidades `Loja Centro` e `Loja Shopping`
+- categorias `Burgers` e `Bebidas`
+- produtos com variantes e opcionais
+- cliente com endereço
+- mesa e sessão de mesa
+- pedido com item, histórico e pagamento
 
-### 🔑 Autenticação no Swagger
+Usuários criados no seed:
 
-1. Faça login em `/auth/login`
-2. Copie o `accessToken`
-3. Clique no botão **Authorize** no topo da página
-4. Cole o token no formato:
+- `ana@sabormineiro.com`
+- `carlos@sabormineiro.com`
+
+Senha padrão:
 
 ```text
-Bearer SEU_TOKEN_AQUI
+123456
 ```
 
 ---
 
-## 📡 Endpoints da API
+## 🔐 Segurança e boas práticas já presentes
 
-### 🔐 Autenticação
-- `POST /auth/signup` - Cadastro de novo usuário
-- `POST /auth/login` - Login (retorna accessToken e refreshToken)
-- `POST /auth/refresh` - Renovar token de acesso
-- `GET /auth/me` - Dados do usuário autenticado
-
-### 👨‍🏫 Professores (Teachers)
-- `GET /teachers` - Listar professores (paginado)
-- `POST /teachers` - Criar novo professor
-- `GET /teachers/:id` - Obter detalhes de um professor
-- `PUT /teachers/:id` - Atualizar professor
-- `DELETE /teachers/:id` - Deletar professor
-
-### 📚 Disciplinas (Disciplines)
-- `GET /disciplines` - Listar disciplinas (paginado)
-- `POST /disciplines` - Criar nova disciplina
-- `GET /disciplines/:id` - Obter detalhes de uma disciplina
-- `PUT /disciplines/:id` - Atualizar disciplina
-- `DELETE /disciplines/:id` - Deletar disciplina
-
-### 📝 Avaliações (Evaluations)
-- `POST /evaluations` - Criar avaliação
-- `GET /evaluations/my` - Minhas avaliações (paginado)
-- `GET /evaluations/teacher/:teacherId` - Avaliações de um professor (paginado)
-- `GET /evaluations/teacher/:teacherId/average` - Média de avaliação por critério
+- hash de senha com `bcrypt`
+- autenticação JWT com refresh token
+- validação de DTOs com `class-validator`
+- guards para rotas protegidas
+- tratamento global de exceções do Prisma
+- configuração centralizada
+- separação entre controller, service e DTOs
+- tipagem forte com TypeScript + Prisma Client
 
 ---
 
-## 🧪 Exemplos de Uso
+## 🛠️ Scripts úteis
 
-### 1. Cadastrar um novo professor
-
-**POST** `/teachers`
-
-```json
-{
-  "name": "Dr. João Silva",
-  "title": "Doutor"
-}
-```
-
-### 2. Criar uma disciplina
-
-**POST** `/disciplines`
-
-```json
-{
-  "name": "Cálculo I",
-  "code": "CALC001"
-}
-```
-
-### 3. Listar professores com paginação
-
-**GET** `/teachers?page=1&limit=10`
-
-Resposta:
-```json
-{
-  "data": [
-    {
-      "id": "uuid",
-      "name": "Dr. João Silva",
-      "title": "Doutor",
-      "disciplines": [
-        {
-          "id": "disc-1",
-          "name": "Cálculo I"
-        }
-      ],
-      "evaluations": [
-        {
-          "id": "eval-1"
-        }
-      ]
-    }
-  ],
-  "total": 25,
-  "page": 1,
-  "limit": 10,
-  "totalPages": 3
-}
-```
-
-### 4. Criar uma avaliação
-
-**POST** `/evaluations`
-
-```json
-{
-  "disciplineId": "uuid-da-disciplina",
-  "teacherId": "uuid-do-professor",
-  "comment": "Excelente didática, explica muito bem",
-  "scores": [
-    { "criterionId": "didatica", "note": 5 },
-    { "criterionId": "assiduidade", "note": 4 }
-  ]
-}
+```bash
+npm run start:dev
+npm run build
+npm run prisma:generate
+npm run prisma:studio
+npm run seed
+npm run docker:db
+npm run docker
 ```
 
 ---
 
-## 🛡️ Segurança
+## 📎 Observações
 
-- ✅ Senhas armazenadas com hash (bcrypt/argon2)
-- ✅ JWT com expiração configurável
-- ✅ Refresh token separado
-- ✅ Endpoints protegidos por Guards
-- ✅ Validação de entrada com class-validator
-- ✅ Tratamento de erros padronizado
-- ✅ CORS configurável
-
----
-
-## 💡 Boas Práticas Implementadas
-
-- ✅ **Separação de camadas**: Controllers, Services e DTOs
-- ✅ **Paginação**: Todos os endpoints GET retornam dados paginados
-- ✅ **Validação**: DTOs com validação automática
-- ✅ **Tratamento de erro**: Exceções customizadas (NotFoundException, BadRequestException)
-- ✅ **Documentação**: Swagger/OpenAPI automático
-- ✅ **Testes**: Testes unitários para services
-- ✅ **Type Safety**: TypeScript em todo o projeto
-- ✅ **ORM**: Prisma com type safety
-
----
-
-## 🔄 Padrão de Resposta
-
-### Sucesso (200, 201)
-```json
-{
-  "id": "uuid-123",
-  "name": "exemplo",
-  "title": "Doutor",
-  "createdAt": "2024-01-01T00:00:00Z"
-}
-```
-
-### Paginação
-```json
-{
-  "data": [
-    {
-      "id": "uuid-1",
-      "name": "Item 1"
-    },
-    {
-      "id": "uuid-2",
-      "name": "Item 2"
-    }
-  ],
-  "total": 100,
-  "page": 1,
-  "limit": 10,
-  "totalPages": 10
-}
-```
-
-### Erro (400, 404, 500)
-```json
-{
-  "statusCode": 400,
-  "message": "Disciplina com este código já existe",
-  "error": "Bad Request"
-}
-``` 
-
----
+- A documentação agora descreve corretamente o projeto como **sistema de restaurante**.
+- O schema Prisma já representa uma operação realista de restaurante, mesmo que nem todos os módulos HTTP estejam implementados ainda.
+- Os metadados exibidos no Swagger ainda podem estar genéricos internamente e podem ser refinados depois sem impactar a estrutura principal da API.

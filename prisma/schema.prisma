@@ -5,18 +5,594 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  // previewFeatures = []
+}
+
+model Tenant {
+  id          String           @id @default(uuid())
+  name        String
+  slug        String           @unique
+  document    String?          @unique
+  phone       String?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  units       RestaurantUnit[]
+  userRoles   UserTenantRole[]
+  customers   Customer[]
+  suppliers   Supplier[]
+  ingredients Ingredient[]
+}
+
+model RestaurantUnit {
+  id               String             @id @default(uuid())
+  tenantId         String
+  name             String
+  slug             String             @unique
+  phone            String?
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  userRoles        UserUnitRole[]
+  categories       Category[]
+  products         Product[]
+  tables           RestaurantTable[]
+  tableSessions    TableSession[]
+  customers        Customer[]
+  orders           Order[]
+  couriers         Courier[]
+  deliveryZones    DeliveryZone[]
+  stockItems       StockItem[]
+  stockMovements   StockMovement[]
+  cashRegisters    CashRegister[]
+  cashMovements    CashMovement[]
+  expenses         Expense[]
+
+  @@index([tenantId])
 }
 
 model User {
-  id       String @id @default(uuid())
-  name     String
-  email    String @unique
-  password String
-  role     Role
+  id           String           @id @default(uuid())
+  name         String
+  email        String           @unique
+  passwordHash String
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  tenantRoles  UserTenantRole[]
+  unitRoles    UserUnitRole[]
+  ordersOpened Order[]          @relation("OrderCreatedBy")
+  statusEvents OrderStatusHistory[] @relation("OrderStatusChangedBy")
+  payments     Payment[]
+  openedCashRegisters CashRegister[] @relation("CashRegisterOpenedBy")
+  closedCashRegisters CashRegister[] @relation("CashRegisterClosedBy")
+  cashMovements CashMovement[]
+  expenses      Expense[]
 }
 
-enum Role {
-  STUDENT
-  ADMIN
+model UserTenantRole {
+  id        String   @id @default(uuid())
+  userId    String
+  tenantId  String
+  role      UserRole
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([userId, tenantId, role])
+  @@index([tenantId])
+}
+
+model UserUnitRole {
+  id        String   @id @default(uuid())
+  userId    String
+  unitId    String
+  role      UserRole
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  unit      RestaurantUnit @relation(fields: [unitId], references: [id])
+
+  @@unique([userId, unitId, role])
+  @@index([unitId])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  unitId     String
+  name      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  unit      RestaurantUnit @relation(fields: [unitId], references: [id])
+  products  Product[]
+
+  @@unique([unitId, name])
+  @@index([unitId])
+}
+
+model Product {
+  id             String              @id @default(uuid())
+  unitId         String
+  categoryId     String?
+  name           String
+  description    String?
+  sku            String?
+  basePrice      Decimal             @db.Decimal(10, 2)
+  imageUrl       String?
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  unit           RestaurantUnit      @relation(fields: [unitId], references: [id])
+  category       Category?           @relation(fields: [categoryId], references: [id])
+  variants       ProductVariant[]
+  optionGroups   ProductOptionGroup[]
+  prices         ProductPrice[]
+  recipe         Recipe?
+  orderItems     OrderItem[]
+
+  @@unique([unitId, name])
+  @@index([unitId, categoryId])
+}
+
+model ProductVariant {
+  id         String   @id @default(uuid())
+  productId  String
+  name       String
+  sku        String?
+  priceDelta Decimal  @default(0) @db.Decimal(10, 2)
+  isDefault  Boolean  @default(false)
+  product    Product  @relation(fields: [productId], references: [id])
+  orderItems OrderItem[]
+
+  @@unique([productId, name])
+  @@index([productId])
+}
+
+model ProductOptionGroup {
+  id          String   @id @default(uuid())
+  productId   String
+  name        String
+  minSelect   Int      @default(0)
+  maxSelect   Int      @default(1)
+  isRequired  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  product     Product  @relation(fields: [productId], references: [id])
+  options     ProductOption[]
+
+  @@unique([productId, name])
+  @@index([productId])
+}
+
+model ProductOption {
+  id            String   @id @default(uuid())
+  optionGroupId String
+  name          String
+  priceDelta    Decimal  @default(0) @db.Decimal(10, 2)
+  isActive      Boolean  @default(true)
+  optionGroup   ProductOptionGroup @relation(fields: [optionGroupId], references: [id])
+  itemOptions   OrderItemOption[]
+
+  @@unique([optionGroupId, name])
+  @@index([optionGroupId])
+}
+
+model ProductPrice {
+  id         String   @id @default(uuid())
+  productId  String
+  name       String
+  price      Decimal  @db.Decimal(10, 2)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  product    Product  @relation(fields: [productId], references: [id])
+
+  @@index([productId, startsAt, endsAt])
+}
+
+model Customer {
+  id         String   @id @default(uuid())
+  tenantId   String
+  unitId     String?
+  name       String
+  phone      String?
+  email      String?
+  document   String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  unit       RestaurantUnit? @relation(fields: [unitId], references: [id])
+  addresses  Address[]
+  orders     Order[]
+
+  @@index([tenantId, unitId])
+}
+
+model Address {
+  id           String   @id @default(uuid())
+  customerId   String
+  label        String?
+  street       String
+  number       String
+  complement   String?
+  neighborhood String?
+  city         String
+  state        String
+  zipCode      String
+  reference    String?
+  latitude     Decimal? @db.Decimal(10, 7)
+  longitude    Decimal? @db.Decimal(10, 7)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  customer     Customer @relation(fields: [customerId], references: [id])
+  orders       Order[]
+
+  @@index([customerId])
+}
+
+model RestaurantTable {
+  id           String   @id @default(uuid())
+  unitId       String
+  name         String
+  seats        Int?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  unit         RestaurantUnit @relation(fields: [unitId], references: [id])
+  sessions     TableSession[]
+  orders       Order[]
+
+  @@unique([unitId, name])
+  @@index([unitId])
+}
+
+model TableSession {
+  id          String   @id @default(uuid())
+  tableId     String
+  unitId      String
+  openedAt    DateTime @default(now())
+  closedAt    DateTime?
+  status      TableSessionStatus @default(OPEN)
+  guestCount  Int?
+  notes       String?
+  table       RestaurantTable @relation(fields: [tableId], references: [id])
+  unit        RestaurantUnit @relation(fields: [unitId], references: [id])
+  orders      Order[]
+
+  @@index([tableId, status])
+  @@index([unitId, status])
+}
+
+model Order {
+  id               String       @id @default(uuid())
+  unitId           String
+  customerId       String?
+  tableId          String?
+  tableSessionId   String?
+  addressId        String?
+  courierId        String?
+  createdByUserId  String?
+  code             Int
+  type             OrderType
+  status           OrderStatus  @default(PENDING)
+  subtotal         Decimal      @db.Decimal(10, 2)
+  discount         Decimal      @default(0) @db.Decimal(10, 2)
+  deliveryFee      Decimal      @default(0) @db.Decimal(10, 2)
+  total            Decimal      @db.Decimal(10, 2)
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  unit             RestaurantUnit @relation(fields: [unitId], references: [id])
+  customer         Customer?    @relation(fields: [customerId], references: [id])
+  table            RestaurantTable? @relation(fields: [tableId], references: [id])
+  tableSession     TableSession? @relation(fields: [tableSessionId], references: [id])
+  address          Address?     @relation(fields: [addressId], references: [id])
+  courier          Courier?     @relation(fields: [courierId], references: [id])
+  createdBy        User?        @relation("OrderCreatedBy", fields: [createdByUserId], references: [id])
+  items            OrderItem[]
+  payments         Payment[]
+  statusHistory    OrderStatusHistory[]
+
+  @@unique([unitId, code])
+  @@index([unitId, status, createdAt])
+}
+
+model OrderItem {
+  id                String   @id @default(uuid())
+  orderId           String
+  productId         String
+  variantId         String?
+  productName       String
+  variantName       String?
+  quantity          Int
+  unitPrice         Decimal  @db.Decimal(10, 2)
+  totalPrice        Decimal  @db.Decimal(10, 2)
+  notes             String?
+  order             Order    @relation(fields: [orderId], references: [id])
+  product           Product  @relation(fields: [productId], references: [id])
+  variant           ProductVariant? @relation(fields: [variantId], references: [id])
+  options           OrderItemOption[]
+
+  @@index([orderId])
+}
+
+model OrderItemOption {
+  id            String   @id @default(uuid())
+  orderItemId   String
+  productOptionId String
+  optionName    String
+  priceDelta    Decimal  @default(0) @db.Decimal(10, 2)
+  quantity      Int      @default(1)
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id])
+  productOption ProductOption @relation(fields: [productOptionId], references: [id])
+
+  @@index([orderItemId])
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(uuid())
+  orderId     String
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById String?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  order       Order       @relation(fields: [orderId], references: [id])
+  changedBy   User?       @relation("OrderStatusChangedBy", fields: [changedById], references: [id])
+
+  @@index([orderId, createdAt])
+}
+
+model DeliveryZone {
+  id          String   @id @default(uuid())
+  unitId      String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  unit        RestaurantUnit @relation(fields: [unitId], references: [id])
+  feeRules    DeliveryFeeRule[]
+
+  @@unique([unitId, name])
+  @@index([unitId])
+}
+
+model DeliveryFeeRule {
+  id             String   @id @default(uuid())
+  deliveryZoneId String
+  minDistanceKm  Decimal? @db.Decimal(5, 2)
+  maxDistanceKm  Decimal? @db.Decimal(5, 2)
+  fee            Decimal  @db.Decimal(10, 2)
+  minimumOrder   Decimal? @db.Decimal(10, 2)
+  deliveryZone   DeliveryZone @relation(fields: [deliveryZoneId], references: [id])
+
+  @@index([deliveryZoneId])
+}
+
+model Courier {
+  id         String   @id @default(uuid())
+  unitId      String
+  name       String
+  phone      String?
+  vehicle    String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  unit       RestaurantUnit @relation(fields: [unitId], references: [id])
+  orders     Order[]
+
+  @@index([unitId])
+}
+
+model Ingredient {
+  id           String   @id @default(uuid())
+  tenantId     String
+  name         String
+  unitMeasure  String
+  sku          String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  stockItems   StockItem[]
+  recipeItems  RecipeItem[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model StockItem {
+  id              String   @id @default(uuid())
+  unitId          String
+  ingredientId    String
+  currentQuantity Decimal  @default(0) @db.Decimal(12, 3)
+  minQuantity     Decimal? @db.Decimal(12, 3)
+  costAverage     Decimal? @db.Decimal(10, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  unit            RestaurantUnit @relation(fields: [unitId], references: [id])
+  ingredient      Ingredient @relation(fields: [ingredientId], references: [id])
+  movements       StockMovement[]
+
+  @@unique([unitId, ingredientId])
+  @@index([unitId])
+}
+
+model StockMovement {
+  id           String            @id @default(uuid())
+  unitId       String
+  stockItemId  String
+  type         StockMovementType
+  quantity     Decimal           @db.Decimal(12, 3)
+  reason       String?
+  referenceId  String?
+  createdAt    DateTime          @default(now())
+  unit         RestaurantUnit    @relation(fields: [unitId], references: [id])
+  stockItem    StockItem         @relation(fields: [stockItemId], references: [id])
+
+  @@index([unitId, createdAt])
+  @@index([stockItemId, createdAt])
+}
+
+model Recipe {
+  id         String   @id @default(uuid())
+  productId   String   @unique
+  yieldQty    Decimal  @default(1) @db.Decimal(10, 3)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id])
+  items       RecipeItem[]
+}
+
+model RecipeItem {
+  id           String   @id @default(uuid())
+  recipeId     String
+  ingredientId String
+  quantity     Decimal  @db.Decimal(12, 3)
+  recipe       Recipe   @relation(fields: [recipeId], references: [id])
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([recipeId, ingredientId])
+  @@index([recipeId])
+}
+
+model Supplier {
+  id         String   @id @default(uuid())
+  tenantId   String
+  name       String
+  phone      String?
+  email      String?
+  document   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model CashRegister {
+  id           String   @id @default(uuid())
+  unitId       String
+  openedById   String?
+  closedById   String?
+  openedAt     DateTime @default(now())
+  closedAt     DateTime?
+  openingFloat Decimal  @default(0) @db.Decimal(10, 2)
+  closingValue Decimal? @db.Decimal(10, 2)
+  status       CashRegisterStatus @default(OPEN)
+  unit         RestaurantUnit @relation(fields: [unitId], references: [id])
+  openedBy     User?    @relation("CashRegisterOpenedBy", fields: [openedById], references: [id])
+  closedBy     User?    @relation("CashRegisterClosedBy", fields: [closedById], references: [id])
+  movements    CashMovement[]
+
+  @@index([unitId, status])
+}
+
+model CashMovement {
+  id             String   @id @default(uuid())
+  unitId         String
+  cashRegisterId String
+  userId         String?
+  type           CashMovementType
+  amount         Decimal  @db.Decimal(10, 2)
+  description    String?
+  createdAt      DateTime @default(now())
+  unit           RestaurantUnit @relation(fields: [unitId], references: [id])
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
+  user           User?    @relation(fields: [userId], references: [id])
+
+  @@index([cashRegisterId, createdAt])
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  unitId      String
+  userId      String?
+  description String
+  category    String?
+  amount      Decimal  @db.Decimal(10, 2)
+  expenseDate DateTime
+  createdAt   DateTime @default(now())
+  unit        RestaurantUnit @relation(fields: [unitId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([unitId, expenseDate])
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  orderId     String
+  userId      String?
+  method      PaymentMethod
+  amount      Decimal       @db.Decimal(10, 2)
+  paidAt      DateTime?
+  status      PaymentStatus @default(PENDING)
+  reference   String?
+  order       Order         @relation(fields: [orderId], references: [id])
+  user        User?         @relation(fields: [userId], references: [id])
+
+  @@index([orderId, status])
+}
+
+enum UserRole {
+  SYSTEM_ADMIN
+  OWNER
+  MANAGER
+  CASHIER
+  ATTENDANT
+  KITCHEN
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+  COUNTER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum TableSessionStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  VOUCHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+enum CashRegisterStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  SALE
+  WITHDRAWAL
+  SUPPLY
+  EXPENSE
+  ADJUSTMENT
 }

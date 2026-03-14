@@ -1,31 +1,36 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
+
+export class UserTenantRoleDto {
+  @ApiProperty({ example: 'tenant-id' })
+  tenantId: string;
+
+  @ApiProperty({ enum: UserRole, enumName: 'UserRole' })
+  role: UserRole;
+}
 
 export class UserResponseDto {
-  @ApiProperty({
-    example: 'uuid-do-usuario',
-    description: 'ID único do usuário',
-  })
+  @ApiProperty({ example: 'uuid-do-usuario' })
   id: string;
 
-  @ApiProperty({ example: 'Maria Santos', description: 'Nome do usuário' })
+  @ApiProperty({ example: 'Ana Paula Souza' })
   name: string;
 
-  @ApiProperty({
-    example: 'maria.santos@email.com',
-    description: 'Email do usuário',
-  })
+  @ApiProperty({ example: 'ana@sabormineiro.com' })
   email: string;
 
-  @ApiProperty({
-    example: '2024-01-15T10:30:00Z',
-    description: 'Data de criação do usuário',
-  })
-  createdAt: string;
+  @ApiProperty({ example: true })
+  isActive: boolean;
 
   @ApiProperty({
-    example: '2024-01-20T15:45:00Z',
-    description: 'Data da última atualização',
-    required: false,
+    type: [UserTenantRoleDto],
+    description: 'Papeis do usuario por tenant',
   })
-  updatedAt?: string;
+  tenantRoles: UserTenantRoleDto[];
+
+  @ApiProperty({ example: '2026-03-14T13:00:00.000Z' })
+  createdAt: Date;
+
+  @ApiProperty({ example: '2026-03-14T13:00:00.000Z' })
+  updatedAt: Date;
 }
