@@ -1,0 +1,222 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from 'nestjs-prisma';
+import { RequestScope } from '../common/models/request-scope.model';
+import { CreateProductInput } from './dto/create-product.input';
+import { UpdateProductInput } from './dto/update-product.input';
+import { ProductsService } from './products.service';
+
+describe('ProductsService', () => {
+  let service: ProductsService;
+  let prisma: {
+    product: {
+      findFirst: jest.Mock;
+      findMany: jest.Mock;
+      count: jest.Mock;
+      create: jest.Mock;
+      update: jest.Mock;
+      delete: jest.Mock;
+    };
+    category: {
+      findFirst: jest.Mock;
+      findMany: jest.Mock;
+    };
+    orderItem: { count: jest.Mock };
+  };
+
+  const scope: RequestScope = {
+    userId: 'user-1',
+    tenantId: 'tenant-1',
+    unitId: 'unit-1',
+  };
+
+  const mockProductRow = (
+    overrides: Partial<{
+      id: string;
+      name: string;
+      isActive: boolean;
+      categoryId: string | null;
+      costPrice: Prisma.Decimal | null;
+    }> = {},
+  ) => ({
+    id: overrides.id ?? 'product-1',
+    name: overrides.name ?? 'Burger',
+    description: null,
+    categoryId: overrides.categoryId ?? null,
+    sku: null,
+    basePrice: new Prisma.Decimal('25.00'),
+    costPrice: overrides.costPrice ?? null,
+    imageUrl: null,
+    isActive: overrides.isActive ?? true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    category: overrides.categoryId ? { name: 'Burgers' } : null,
+  });
+
+  beforeEach(() => {
+    prisma = {
+      product: {
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+      },
+      category: {
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+      },
+      orderItem: {
+        count: jest.fn(),
+      },
+    };
+
+    service = new ProductsService(prisma as unknown as PrismaService);
+  });
+
+  describe('getById', () => {
+    it('throws NotFoundException when product does not exist in unit', async () => {
+      prisma.product.findFirst.mockResolvedValue(null);
+
+      await expect(service.getById(scope, 'product-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('returns product details with margin calculated', async () => {
+      prisma.product.findFirst.mockResolvedValue(
+        mockProductRow({ costPrice: new Prisma.Decimal('15.00') }),
+      );
+
+      const result = await service.getById(scope, 'product-1');
+
+      expect(result.id).toBe('product-1');
+      expect(result.basePrice).toBe(25);
+      expect(result.costPrice).toBe(15);
+      expect(result.margin).toBe(10);
+      expect(result.marginPercentage).toBe(40);
+    });
+
+    it('returns null margin and marginPercentage when costPrice is not set', async () => {
+      prisma.product.findFirst.mockResolvedValue(mockProductRow());
+
+      const result = await service.getById(scope, 'product-1');
+
+      expect(result.costPrice).toBeNull();
+      expect(result.margin).toBeNull();
+      expect(result.marginPercentage).toBeNull();
+    });
+  });
+
+  describe('create', () => {
+    it('throws BadRequestException when category does not belong to unit', async () => {
+      prisma.category.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create(scope, {
+          name: 'Burger',
+          basePrice: 25.9,
+          categoryId: 'category-1',
+          isActive: true,
+        } as CreateProductInput),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('creates product when category is valid', async () => {
+      prisma.category.findFirst.mockResolvedValue({ id: 'category-1' });
+      prisma.product.create.mockResolvedValue({ id: 'product-new' });
+      prisma.product.findFirst.mockResolvedValue(
+        mockProductRow({ id: 'product-new', categoryId: 'category-1' }),
+      );
+
+      const result = await service.create(scope, {
+        name: 'Burger',
+        basePrice: 25.9,
+        categoryId: 'category-1',
+        isActive: true,
+      } as CreateProductInput);
+
+      expect(result.id).toBe('product-new');
+    });
+
+    it('creates product without category when categoryId is not provided', async () => {
+      prisma.product.create.mockResolvedValue({ id: 'product-no-cat' });
+      prisma.product.findFirst.mockResolvedValue(
+        mockProductRow({ id: 'product-no-cat' }),
+      );
+
+      const result = await service.create(scope, {
+        name: 'Generic',
+        basePrice: 10,
+        isActive: true,
+      } as CreateProductInput);
+
+      expect(prisma.category.findFirst).not.toHaveBeenCalled();
+      expect(result.id).toBe('product-no-cat');
+    });
+  });
+
+  describe('update', () => {
+    it('throws NotFoundException when product does not exist', async () => {
+      prisma.product.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.update(scope, 'product-1', {
+          name: 'Updated',
+        } as UpdateProductInput),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException when new category does not belong to unit', async () => {
+      prisma.product.findFirst.mockResolvedValue(mockProductRow());
+      prisma.category.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.update(scope, 'product-1', {
+          categoryId: 'bad-category',
+        } as UpdateProductInput),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('remove', () => {
+    it('throws NotFoundException when product does not exist', async () => {
+      prisma.product.findFirst.mockResolvedValue(null);
+
+      await expect(service.remove(scope, 'product-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('deactivates product when order items reference it', async () => {
+      prisma.product.findFirst.mockResolvedValue(mockProductRow());
+      prisma.orderItem.count.mockResolvedValue(3);
+      prisma.product.update.mockResolvedValue({});
+
+      const result = await service.remove(scope, 'product-1');
+
+      expect(result).toEqual({ success: true, mode: 'deactivated' });
+      expect(prisma.product.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'product-1' },
+          data: { isActive: false },
+        }),
+      );
+      expect(prisma.product.delete).not.toHaveBeenCalled();
+    });
+
+    it('hard deletes product when no order items reference it', async () => {
+      prisma.product.findFirst.mockResolvedValue(mockProductRow());
+      prisma.orderItem.count.mockResolvedValue(0);
+      prisma.product.delete.mockResolvedValue({});
+
+      const result = await service.remove(scope, 'product-1');
+
+      expect(result).toEqual({ success: true, mode: 'hard-delete' });
+      expect(prisma.product.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'product-1' } }),
+      );
+    });
+  });
+});

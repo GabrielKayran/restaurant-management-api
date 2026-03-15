@@ -5,6 +5,12 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import config from './common/configs/config';
 import { StaffModule } from './staff/staff.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { OrdersModule } from './orders/orders.module';
+import { TablesModule } from './tables/tables.module';
+import { ProductsModule } from './products/products.module';
+import { PaymentsModule } from './payments/payments.module';
+import { CashRegisterModule } from './cash-register/cash-register.module';
 
 @Module({
   imports: [
@@ -22,6 +28,12 @@ import { StaffModule } from './staff/staff.module';
     }),
     AuthModule,
     StaffModule,
+    DashboardModule,
+    OrdersModule,
+    TablesModule,
+    ProductsModule,
+    PaymentsModule,
+    CashRegisterModule,
   ],
   controllers: [AppController],
 })

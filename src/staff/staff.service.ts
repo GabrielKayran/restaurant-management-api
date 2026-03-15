@@ -10,6 +10,7 @@ import { Prisma, StaffInviteStatus, UserRole } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { PasswordService } from '../auth/password.service';
 import { AuthenticatedUser } from '../auth/models/authenticated-user.model';
+import { Messages } from '../common/i18n/messages';
 import { AcceptStaffInviteInput } from './dto/accept-staff-invite.input';
 import { CreateStaffInput } from './dto/create-staff.input';
 import { CreateStaffInviteInput } from './dto/create-staff-invite.input';
@@ -72,9 +73,7 @@ export class StaffService {
         });
 
         if (existingUser && !existingUser.isActive) {
-          throw new ConflictException(
-            'Ja existe usuario inativo com este e-mail. Reative a conta antes de vincular.',
-          );
+          throw new ConflictException(Messages.STAFF_INACTIVE_EMAIL);
         }
 
         const user =
@@ -141,9 +140,7 @@ export class StaffService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException(
-          'Colaborador ja possui este perfil no contexto informado.',
-        );
+        throw new ConflictException(Messages.STAFF_ROLE_ALREADY_EXISTS);
       }
 
       throw error;
@@ -181,9 +178,7 @@ export class StaffService {
     });
 
     if (pendingInvite) {
-      throw new ConflictException(
-        'Ja existe convite pendente para este colaborador no contexto informado.',
-      );
+      throw new ConflictException(Messages.INVITE_PENDING_EXISTS);
     }
 
     const inviteToken = this.generateInviteToken();
@@ -232,11 +227,11 @@ export class StaffService {
     });
 
     if (!invite) {
-      throw new NotFoundException('Convite nao encontrado.');
+      throw new NotFoundException(Messages.INVITE_NOT_FOUND);
     }
 
     if (invite.status !== StaffInviteStatus.PENDING) {
-      throw new BadRequestException('Convite nao esta pendente para aceite.');
+      throw new BadRequestException(Messages.INVITE_NOT_PENDING);
     }
 
     if (invite.expiresAt <= new Date()) {
@@ -244,7 +239,7 @@ export class StaffService {
         where: { id: invite.id },
         data: { status: StaffInviteStatus.EXPIRED },
       });
-      throw new BadRequestException('Convite expirado.');
+      throw new BadRequestException(Messages.INVITE_EXPIRED);
     }
 
     const normalizedName = input.name
@@ -269,15 +264,11 @@ export class StaffService {
       });
 
       if (existingUser && !existingUser.isActive) {
-        throw new ConflictException(
-          'Ja existe usuario inativo com este e-mail. Reative a conta antes de aceitar convite.',
-        );
+        throw new ConflictException(Messages.INVITE_INACTIVE_EMAIL);
       }
 
       if (!existingUser && !normalizedName) {
-        throw new BadRequestException(
-          'Nome e obrigatorio para aceitar convite de um novo colaborador.',
-        );
+        throw new BadRequestException(Messages.INVITE_NEW_USER_REQUIRES_NAME);
       }
 
       const user =
@@ -442,15 +433,11 @@ export class StaffService {
     });
 
     if (!targetUser) {
-      throw new NotFoundException(
-        'Colaborador nao encontrado no tenant atual.',
-      );
+      throw new NotFoundException(Messages.STAFF_NOT_FOUND);
     }
 
     if (targetUser.id === creator.id && !input.isActive) {
-      throw new BadRequestException(
-        'Voce nao pode desativar sua propria conta.',
-      );
+      throw new BadRequestException(Messages.STAFF_SELF_DEACTIVATION_FORBIDDEN);
     }
 
     if (
@@ -459,9 +446,7 @@ export class StaffService {
       ) &&
       !creatorRoles.has(UserRole.OWNER)
     ) {
-      throw new ForbiddenException(
-        'Somente owner pode alterar status de outro owner.',
-      );
+      throw new ForbiddenException(Messages.STAFF_OWNER_STATUS_FORBIDDEN);
     }
 
     const updatedUser = await this.prisma.user.update({
@@ -502,16 +487,12 @@ export class StaffService {
     allowManagerAssignment: boolean,
   ): void {
     if (!allowManagerAssignment && targetRole === UserRole.MANAGER) {
-      throw new BadRequestException(
-        'Role alvo nao permitida para esta operacao.',
-      );
+      throw new BadRequestException(Messages.ROLE_ASSIGNMENT_FORBIDDEN);
     }
 
     if (creatorRoles.has(UserRole.OWNER)) {
       if (!this.ownerAssignableRoles.has(targetRole)) {
-        throw new BadRequestException(
-          'Role alvo nao permitida para criacao de staff.',
-        );
+        throw new BadRequestException(Messages.ROLE_ASSIGNMENT_FORBIDDEN);
       }
 
       return;
@@ -519,17 +500,13 @@ export class StaffService {
 
     if (creatorRoles.has(UserRole.MANAGER)) {
       if (!this.managerAssignableRoles.has(targetRole)) {
-        throw new ForbiddenException(
-          'Manager nao pode atribuir este perfil. Utilize um owner para esta operacao.',
-        );
+        throw new ForbiddenException(Messages.ROLE_ASSIGNMENT_FORBIDDEN);
       }
 
       return;
     }
 
-    throw new ForbiddenException(
-      'Voce nao possui permissao para criar colaboradores.',
-    );
+    throw new ForbiddenException(Messages.ASSIGNABLE_ROLES_REQUIRED);
   }
 
   private assertHasStaffManagementPermission(
@@ -542,18 +519,14 @@ export class StaffService {
       return;
     }
 
-    throw new ForbiddenException(
-      'Voce nao possui permissao para gerenciar colaboradores.',
-    );
+    throw new ForbiddenException(Messages.ASSIGNABLE_ROLES_REQUIRED);
   }
 
   private getTenantIdOrThrow(creator: AuthenticatedUser): string {
     const tenantId = creator.auth?.tenantId;
 
     if (!tenantId) {
-      throw new ForbiddenException(
-        'Contexto de tenant ausente no token. Realize login com contexto valido.',
-      );
+      throw new ForbiddenException(Messages.TENANT_CONTEXT_MISSING);
     }
 
     return tenantId;
@@ -574,9 +547,7 @@ export class StaffService {
     });
 
     if (!unit) {
-      throw new NotFoundException(
-        'Unidade nao encontrada para o tenant autenticado.',
-      );
+      throw new NotFoundException(Messages.UNIT_NOT_IN_TENANT);
     }
   }
 

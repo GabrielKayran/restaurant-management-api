@@ -10,6 +10,7 @@ import { PrismaService } from 'nestjs-prisma';
 import { UserRole } from '@prisma/client';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthenticatedUser } from '../models/authenticated-user.model';
+import { Messages } from '../../common/i18n/messages';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -36,9 +37,7 @@ export class RolesGuard implements CanActivate {
     }
 
     if (!user.auth?.tenantId) {
-      throw new ForbiddenException(
-        'Contexto de tenant ausente no token. Realize login com contexto valido.',
-      );
+      throw new ForbiddenException(Messages.TENANT_CONTEXT_REQUIRED);
     }
 
     const tenantRoles = await this.prisma.userTenantRole.findMany({
@@ -56,7 +55,7 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!hasPermission) {
-      throw new ForbiddenException('Voce nao possui permissao para esta acao.');
+      throw new ForbiddenException(Messages.NO_PERMISSION);
     }
 
     return true;

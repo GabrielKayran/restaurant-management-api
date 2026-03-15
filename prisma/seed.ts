@@ -2,6 +2,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   PrismaClient,
+  TableReservationStatus,
   TableSessionStatus,
   OrderStatus,
   OrderType,
@@ -13,10 +14,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   await prisma.payment.deleteMany();
-  await prisma.orderStatusHistory.deleteMany();
   await prisma.orderItemOption.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.tableReservation.deleteMany();
   await prisma.tableSession.deleteMany();
   await prisma.restaurantTable.deleteMany();
   await prisma.productPrice.deleteMany();
@@ -134,6 +135,8 @@ async function main() {
       name: 'X-Burger',
       description: 'Hamburguer artesanal com queijo e salada',
       basePrice: 28.9,
+      costPrice: 12.6,
+      costUpdatedAt: new Date(),
       variants: {
         create: [
           { name: 'Normal', isDefault: true, priceDelta: 0 },
@@ -173,6 +176,8 @@ async function main() {
       categoryId: drinks.id,
       name: 'Refrigerante Lata',
       basePrice: 6.5,
+      costPrice: 2.2,
+      costUpdatedAt: new Date(),
     },
   });
 
@@ -216,6 +221,20 @@ async function main() {
     },
   });
 
+  await prisma.tableReservation.create({
+    data: {
+      unitId: unitCentro.id,
+      tableId: table.id,
+      customerId: customer.id,
+      name: customer.name,
+      phone: customer.phone,
+      guestCount: 2,
+      reservedForStart: new Date(Date.now() + 60 * 60 * 1000),
+      reservedForEnd: new Date(Date.now() + 90 * 60 * 1000),
+      status: TableReservationStatus.CONFIRMED,
+    },
+  });
+
   const order = await prisma.order.create({
     data: {
       unitId: unitCentro.id,
@@ -226,6 +245,7 @@ async function main() {
       code: 1,
       type: OrderType.DINE_IN,
       status: OrderStatus.CONFIRMED,
+      confirmedAt: new Date(),
       subtotal: 32.4,
       discount: 0,
       deliveryFee: 0,
@@ -251,14 +271,6 @@ async function main() {
             },
           },
         ],
-      },
-      statusHistory: {
-        create: {
-          fromStatus: OrderStatus.PENDING,
-          toStatus: OrderStatus.CONFIRMED,
-          changedById: manager.id,
-          notes: 'Pedido confirmado no caixa.',
-        },
       },
       payments: {
         create: {

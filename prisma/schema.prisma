@@ -25,20 +25,21 @@ model Tenant {
 }
 
 model RestaurantUnit {
-  id             String            @id @default(uuid())
+  id             String             @id @default(uuid())
   tenantId       String
   name           String
-  slug           String            @unique
+  slug           String             @unique
   phone          String?
-  isActive       Boolean           @default(true)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  tenant         Tenant            @relation(fields: [tenantId], references: [id])
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  tenant         Tenant             @relation(fields: [tenantId], references: [id])
   userRoles      UserUnitRole[]
   categories     Category[]
   products       Product[]
   tables         RestaurantTable[]
   tableSessions  TableSession[]
+  reservations   TableReservation[]
   customers      Customer[]
   orders         Order[]
   couriers       Courier[]
@@ -54,24 +55,24 @@ model RestaurantUnit {
 }
 
 model User {
-  id                   String               @id @default(uuid())
+  id                   String           @id @default(uuid())
   name                 String
-  email                String               @unique
+  email                String           @unique
   passwordHash         String
-  isActive             Boolean              @default(true)
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  isActive             Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
   tenantRoles          UserTenantRole[]
   unitRoles            UserUnitRole[]
-  ordersOpened         Order[]              @relation("OrderCreatedBy")
-  statusEvents         OrderStatusHistory[] @relation("OrderStatusChangedBy")
+  ordersOpened         Order[]          @relation("OrderCreatedBy")
   payments             Payment[]
-  openedCashRegisters  CashRegister[]       @relation("CashRegisterOpenedBy")
-  closedCashRegisters  CashRegister[]       @relation("CashRegisterClosedBy")
+  openedCashRegisters  CashRegister[]   @relation("CashRegisterOpenedBy")
+  closedCashRegisters  CashRegister[]   @relation("CashRegisterClosedBy")
   cashMovements        CashMovement[]
   expenses             Expense[]
-  staffInvitesCreated  StaffInvite[]        @relation("StaffInviteCreatedBy")
-  staffInvitesAccepted StaffInvite[]        @relation("StaffInviteAcceptedBy")
+  orderStatusChanges   OrderStatusHistory[] @relation("OrderStatusHistoryChangedBy")
+  staffInvitesCreated  StaffInvite[]    @relation("StaffInviteCreatedBy")
+  staffInvitesAccepted StaffInvite[]    @relation("StaffInviteAcceptedBy")
 }
 
 model StaffInvite {
@@ -138,24 +139,26 @@ model Category {
 }
 
 model Product {
-  id           String               @id @default(uuid())
-  unitId       String
-  categoryId   String?
-  name         String
-  description  String?
-  sku          String?
-  basePrice    Decimal              @db.Decimal(10, 2)
-  imageUrl     String?
-  isActive     Boolean              @default(true)
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  unit         RestaurantUnit       @relation(fields: [unitId], references: [id])
-  category     Category?            @relation(fields: [categoryId], references: [id])
-  variants     ProductVariant[]
-  optionGroups ProductOptionGroup[]
-  prices       ProductPrice[]
-  recipe       Recipe?
-  orderItems   OrderItem[]
+  id            String               @id @default(uuid())
+  unitId        String
+  categoryId    String?
+  name          String
+  description   String?
+  sku           String?
+  basePrice     Decimal              @db.Decimal(10, 2)
+  costPrice     Decimal?             @db.Decimal(10, 2)
+  costUpdatedAt DateTime?
+  imageUrl      String?
+  isActive      Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  unit          RestaurantUnit       @relation(fields: [unitId], references: [id])
+  category      Category?            @relation(fields: [categoryId], references: [id])
+  variants      ProductVariant[]
+  optionGroups  ProductOptionGroup[]
+  prices        ProductPrice[]
+  recipe        Recipe?
+  orderItems    OrderItem[]
 
   @@unique([unitId, name])
   @@index([unitId, categoryId])
@@ -216,20 +219,21 @@ model ProductPrice {
 }
 
 model Customer {
-  id        String          @id @default(uuid())
-  tenantId  String
-  unitId    String?
-  name      String
-  phone     String?
-  email     String?
-  document  String?
-  notes     String?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  tenant    Tenant          @relation(fields: [tenantId], references: [id])
-  unit      RestaurantUnit? @relation(fields: [unitId], references: [id])
-  addresses Address[]
-  orders    Order[]
+  id                String             @id @default(uuid())
+  tenantId          String
+  unitId            String?
+  name              String
+  phone             String?
+  email             String?
+  document          String?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  unit              RestaurantUnit?    @relation(fields: [unitId], references: [id])
+  addresses         Address[]
+  orders            Order[]
+  tableReservations TableReservation[]
 
   @@index([tenantId, unitId])
 }
@@ -257,16 +261,17 @@ model Address {
 }
 
 model RestaurantTable {
-  id        String         @id @default(uuid())
-  unitId    String
-  name      String
-  seats     Int?
-  isActive  Boolean        @default(true)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  unit      RestaurantUnit @relation(fields: [unitId], references: [id])
-  sessions  TableSession[]
-  orders    Order[]
+  id           String             @id @default(uuid())
+  unitId       String
+  name         String
+  seats        Int?
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  unit         RestaurantUnit     @relation(fields: [unitId], references: [id])
+  sessions     TableSession[]
+  reservations TableReservation[]
+  orders       Order[]
 
   @@unique([unitId, name])
   @@index([unitId])
@@ -289,8 +294,30 @@ model TableSession {
   @@index([unitId, status])
 }
 
+model TableReservation {
+  id               String                 @id @default(uuid())
+  unitId           String
+  tableId          String
+  customerId       String?
+  name             String
+  phone            String?
+  guestCount       Int?
+  reservedForStart DateTime
+  reservedForEnd   DateTime
+  status           TableReservationStatus @default(PENDING)
+  notes            String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  unit             RestaurantUnit         @relation(fields: [unitId], references: [id])
+  table            RestaurantTable        @relation(fields: [tableId], references: [id])
+  customer         Customer?              @relation(fields: [customerId], references: [id])
+
+  @@index([unitId, status, reservedForStart])
+  @@index([tableId, reservedForStart, reservedForEnd])
+}
+
 model Order {
-  id              String               @id @default(uuid())
+  id              String           @id @default(uuid())
   unitId          String
   customerId      String?
   tableId         String?
@@ -300,27 +327,47 @@ model Order {
   createdByUserId String?
   code            Int
   type            OrderType
-  status          OrderStatus          @default(PENDING)
-  subtotal        Decimal              @db.Decimal(10, 2)
-  discount        Decimal              @default(0) @db.Decimal(10, 2)
-  deliveryFee     Decimal              @default(0) @db.Decimal(10, 2)
-  total           Decimal              @db.Decimal(10, 2)
+  status          OrderStatus      @default(PENDING)
+  confirmedAt     DateTime?
+  preparingAt     DateTime?
+  readyAt         DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  subtotal        Decimal          @db.Decimal(10, 2)
+  discount        Decimal          @default(0) @db.Decimal(10, 2)
+  deliveryFee     Decimal          @default(0) @db.Decimal(10, 2)
+  total           Decimal          @db.Decimal(10, 2)
   notes           String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  unit            RestaurantUnit       @relation(fields: [unitId], references: [id])
-  customer        Customer?            @relation(fields: [customerId], references: [id])
-  table           RestaurantTable?     @relation(fields: [tableId], references: [id])
-  tableSession    TableSession?        @relation(fields: [tableSessionId], references: [id])
-  address         Address?             @relation(fields: [addressId], references: [id])
-  courier         Courier?             @relation(fields: [courierId], references: [id])
-  createdBy       User?                @relation("OrderCreatedBy", fields: [createdByUserId], references: [id])
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  unit            RestaurantUnit   @relation(fields: [unitId], references: [id])
+  customer        Customer?        @relation(fields: [customerId], references: [id])
+  table           RestaurantTable? @relation(fields: [tableId], references: [id])
+  tableSession    TableSession?    @relation(fields: [tableSessionId], references: [id])
+  address         Address?         @relation(fields: [addressId], references: [id])
+  courier         Courier?         @relation(fields: [courierId], references: [id])
+  createdBy       User?            @relation("OrderCreatedBy", fields: [createdByUserId], references: [id])
   items           OrderItem[]
   payments        Payment[]
   statusHistory   OrderStatusHistory[]
 
   @@unique([unitId, code])
   @@index([unitId, status, createdAt])
+}
+
+model OrderStatusHistory {
+  id              String      @id @default(uuid())
+  orderId         String
+  fromStatus      OrderStatus?
+  toStatus        OrderStatus
+  reason          String?
+  changedByUserId String?
+  changedAt       DateTime    @default(now())
+  order           Order       @relation(fields: [orderId], references: [id])
+  changedBy       User?       @relation("OrderStatusHistoryChangedBy", fields: [changedByUserId], references: [id])
+
+  @@index([orderId, changedAt])
+  @@index([changedByUserId])
 }
 
 model OrderItem {
@@ -353,20 +400,6 @@ model OrderItemOption {
   productOption   ProductOption @relation(fields: [productOptionId], references: [id])
 
   @@index([orderItemId])
-}
-
-model OrderStatusHistory {
-  id          String       @id @default(uuid())
-  orderId     String
-  fromStatus  OrderStatus?
-  toStatus    OrderStatus
-  changedById String?
-  notes       String?
-  createdAt   DateTime     @default(now())
-  order       Order        @relation(fields: [orderId], references: [id])
-  changedBy   User?        @relation("OrderStatusChangedBy", fields: [changedById], references: [id])
-
-  @@index([orderId, createdAt])
 }
 
 model DeliveryZone {
@@ -553,10 +586,14 @@ model Payment {
   paidAt    DateTime?
   status    PaymentStatus @default(PENDING)
   reference String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
   order     Order         @relation(fields: [orderId], references: [id])
   user      User?         @relation(fields: [userId], references: [id])
 
   @@index([orderId, status])
+  @@index([status, paidAt])
+  @@index([method, status])
 }
 
 enum UserRole {
@@ -588,6 +625,14 @@ enum TableSessionStatus {
   OPEN
   CLOSED
   CANCELLED
+}
+
+enum TableReservationStatus {
+  PENDING
+  CONFIRMED
+  SEATED
+  CANCELLED
+  NO_SHOW
 }
 
 enum PaymentMethod {

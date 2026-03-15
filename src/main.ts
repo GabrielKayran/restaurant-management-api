@@ -1,4 +1,5 @@
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { ValidationError } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -10,11 +11,33 @@ import type {
   SwaggerConfig,
 } from './common/configs/config.interface';
 
+function collectMessages(error: ValidationError): string[] {
+  const current = Object.values(error.constraints ?? {});
+  const nested = (error.children ?? []).flatMap((child) =>
+    collectMessages(child),
+  );
+  return [...current, ...nested];
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Validation
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      exceptionFactory: (errors: ValidationError[]) => {
+        const messages = errors.flatMap((error) => collectMessages(error));
+        return new BadRequestException({
+          statusCode: 400,
+          message: messages,
+          error: 'Requisição inválida',
+        });
+      },
+    }),
+  );
 
   // enable shutdown hook
   app.enableShutdownHooks();
