@@ -12,20 +12,20 @@ import {
 
 export class CreateProductInput {
   @ApiProperty()
-  @IsString({ message: 'O nome do produto deve ser um texto.' })
-  @MaxLength(120, { message: 'O nome pode ter no máximo 120 caracteres.' })
+  @IsString({ message: 'validation.products.nameMustBeString' })
+  @MaxLength(120, { message: 'validation.products.nameMaxLength120' })
   name: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID('4', { message: 'ID de categoria inválido.' })
+  @IsUUID('4', { message: 'validation.products.categoryIdInvalid' })
   categoryId: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString({ message: 'A descrição deve ser um texto.' })
+  @IsString({ message: 'validation.products.descriptionMustBeString' })
   @MaxLength(1000, {
-    message: 'A descrição pode ter no máximo 1000 caracteres.',
+    message: 'validation.products.descriptionMaxLength1000',
   })
   description: string;
 
@@ -34,10 +34,10 @@ export class CreateProductInput {
   @IsNumber(
     { maxDecimalPlaces: 2 },
     {
-      message: 'O preço de venda deve ser um número com até 2 casas decimais.',
+      message: 'validation.products.basePriceDecimal',
     },
   )
-  @Min(0, { message: 'O preço de venda não pode ser negativo.' })
+  @Min(0, { message: 'validation.products.basePriceMin' })
   basePrice: number;
 
   @ApiPropertyOptional()
@@ -45,24 +45,24 @@ export class CreateProductInput {
   @Type(() => Number)
   @IsNumber(
     { maxDecimalPlaces: 2 },
-    { message: 'O custo deve ser um número com até 2 casas decimais.' },
+    { message: 'validation.products.costPriceDecimal' },
   )
-  @Min(0, { message: 'O custo não pode ser negativo.' })
+  @Min(0, { message: 'validation.products.costPriceMin' })
   costPrice: number;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString({ message: 'O SKU deve ser um texto.' })
+  @IsString({ message: 'validation.products.skuMustBeString' })
   sku: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString({ message: 'A URL da imagem deve ser um texto.' })
+  @IsString({ message: 'validation.products.imageUrlMustBeString' })
   imageUrl: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Boolean)
-  @IsBoolean({ message: 'O campo ativo deve ser verdadeiro ou falso.' })
+  @IsBoolean({ message: 'validation.products.isActiveBoolean' })
   isActive: boolean;
 }

@@ -14,31 +14,31 @@ export class ProductsListQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'A página deve ser um número inteiro.' })
-  @Min(1, { message: 'A página mínima é 1.' })
+  @IsInt({ message: 'validation.common.pageMustBeInteger' })
+  @Min(1, { message: 'validation.common.pageMin' })
   page: number = 1;
 
   @ApiPropertyOptional({ default: 10 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'O limite deve ser um número inteiro.' })
-  @Min(1, { message: 'O limite mínimo é 1.' })
-  @Max(100, { message: 'O limite máximo é 100.' })
+  @IsInt({ message: 'validation.common.limitMustBeInteger' })
+  @Min(1, { message: 'validation.common.limitMin' })
+  @Max(100, { message: 'validation.common.limitMax100' })
   limit: number = 10;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString({ message: 'A busca deve ser um texto.' })
+  @IsString({ message: 'validation.common.searchMustBeString' })
   search: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID('4', { message: 'ID de categoria inválido.' })
+  @IsUUID('4', { message: 'validation.products.categoryIdInvalid' })
   categoryId: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Boolean)
-  @IsBoolean({ message: 'O filtro de ativo deve ser verdadeiro ou falso.' })
+  @IsBoolean({ message: 'validation.products.isActiveFilterBoolean' })
   isActive: boolean;
 }

@@ -2,6 +2,10 @@ import { I18nContext } from 'nestjs-i18n';
 
 const MESSAGE_KEYS = {
   INVALID_CREDENTIALS: 'errors.auth.invalidCredentials',
+  EMAIL_ALREADY_IN_USE: 'errors.auth.emailAlreadyInUse',
+  TENANT_OR_UNIT_NAME_ALREADY_EXISTS:
+    'errors.auth.tenantOrUnitNameAlreadyExists',
+  IDENTITY_ALREADY_IN_USE: 'errors.auth.identityAlreadyInUse',
   TENANT_CONTEXT_REQUIRED: 'errors.auth.tenantContextRequired',
   TENANT_CONTEXT_MISSING: 'errors.auth.tenantContextMissing',
   UNIT_HEADER_REQUIRED: 'errors.scope.unitHeaderRequired',
@@ -50,12 +54,20 @@ const MESSAGE_KEYS = {
   DB_RECORD_NOT_FOUND: 'errors.database.recordNotFound',
   DB_RELATION_CONSTRAINT: 'errors.database.relationConstraint',
   DB_INTERNAL: 'errors.database.internal',
+  ORDER_CREATED: 'messages.orders.created',
+  ORDER_CREATED_FROM_TABLE: 'messages.orders.createdFromTable',
+  PAYMENT_DESCRIPTION_FOR_ORDER: 'messages.payments.descriptionForOrder',
 } as const;
 
 type MessageKey = (typeof MESSAGE_KEYS)[keyof typeof MESSAGE_KEYS];
 
 const PT_BR_FALLBACK: Record<MessageKey, string> = {
   'errors.auth.invalidCredentials': 'Credenciais invalidas.',
+  'errors.auth.emailAlreadyInUse': 'Este email ja esta em uso.',
+  'errors.auth.tenantOrUnitNameAlreadyExists':
+    'Ja existe um tenant ou unidade com este nome. Escolha um nome diferente para o tenant ou unidade.',
+  'errors.auth.identityAlreadyInUse':
+    'Email ou identificador do tenant/unidade ja esta em uso.',
   'errors.auth.tenantContextRequired':
     'Contexto do tenant ausente no token. Faca login novamente.',
   'errors.auth.tenantContextMissing':
@@ -134,6 +146,9 @@ const PT_BR_FALLBACK: Record<MessageKey, string> = {
   'errors.database.relationConstraint':
     'Nao e possivel realizar esta operacao pois existem registros relacionados.',
   'errors.database.internal': 'Erro interno no banco de dados.',
+  'messages.orders.created': 'Pedido criado.',
+  'messages.orders.createdFromTable': 'Pedido criado a partir da mesa.',
+  'messages.payments.descriptionForOrder': 'Pagamento do pedido #{{orderCode}}',
 };
 
 function interpolate(
@@ -166,9 +181,40 @@ function translate(
   return interpolate(PT_BR_FALLBACK[key], args);
 }
 
+function translateRaw(
+  key: string,
+  args?: Record<string, string | number | boolean>,
+): string {
+  const translated = I18nContext.current()?.t(key, {
+    args,
+    defaultValue: key,
+  });
+
+  return typeof translated === 'string' ? translated : key;
+}
+
 export class Messages {
+  static translate(
+    key: string,
+    args?: Record<string, string | number | boolean>,
+  ): string {
+    return translateRaw(key, args);
+  }
+
   static get INVALID_CREDENTIALS(): string {
     return translate(MESSAGE_KEYS.INVALID_CREDENTIALS);
+  }
+
+  static get EMAIL_ALREADY_IN_USE(): string {
+    return translate(MESSAGE_KEYS.EMAIL_ALREADY_IN_USE);
+  }
+
+  static get TENANT_OR_UNIT_NAME_ALREADY_EXISTS(): string {
+    return translate(MESSAGE_KEYS.TENANT_OR_UNIT_NAME_ALREADY_EXISTS);
+  }
+
+  static get IDENTITY_ALREADY_IN_USE(): string {
+    return translate(MESSAGE_KEYS.IDENTITY_ALREADY_IN_USE);
   }
 
   static get TENANT_CONTEXT_REQUIRED(): string {
@@ -361,5 +407,17 @@ export class Messages {
 
   static get DB_INTERNAL(): string {
     return translate(MESSAGE_KEYS.DB_INTERNAL);
+  }
+
+  static get ORDER_CREATED(): string {
+    return translate(MESSAGE_KEYS.ORDER_CREATED);
+  }
+
+  static get ORDER_CREATED_FROM_TABLE(): string {
+    return translate(MESSAGE_KEYS.ORDER_CREATED_FROM_TABLE);
+  }
+
+  static PAYMENT_DESCRIPTION_FOR_ORDER(orderCode: number): string {
+    return translate(MESSAGE_KEYS.PAYMENT_DESCRIPTION_FOR_ORDER, { orderCode });
   }
 }

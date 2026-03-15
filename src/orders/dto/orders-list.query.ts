@@ -15,37 +15,37 @@ export class OrdersListQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'A página deve ser um número inteiro.' })
-  @Min(1, { message: 'A página mínima é 1.' })
+  @IsInt({ message: 'validation.common.pageMustBeInteger' })
+  @Min(1, { message: 'validation.common.pageMin' })
   page: number = 1;
 
   @ApiPropertyOptional({ example: 10, default: 10 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'O limite deve ser um número inteiro.' })
-  @Min(1, { message: 'O limite mínimo é 1.' })
-  @Max(100, { message: 'O limite máximo é 100.' })
+  @IsInt({ message: 'validation.common.limitMustBeInteger' })
+  @Min(1, { message: 'validation.common.limitMin' })
+  @Max(100, { message: 'validation.common.limitMax100' })
   limit: number = 10;
 
   @ApiPropertyOptional({
     description: 'Código do pedido, nome da mesa ou nome do cliente',
   })
   @IsOptional()
-  @IsString({ message: 'A busca deve ser um texto.' })
+  @IsString({ message: 'validation.common.searchMustBeString' })
   search: string;
 
   @ApiPropertyOptional({ enum: OrderStatus })
   @IsOptional()
-  @IsEnum(OrderStatus, { message: 'Status do pedido inválido.' })
+  @IsEnum(OrderStatus, { message: 'validation.orders.statusInvalid' })
   status: OrderStatus;
 
   @ApiPropertyOptional({ description: 'Data de início (ISO 8601)' })
   @IsOptional()
-  @IsDateString({}, { message: 'Data de início inválida.' })
+  @IsDateString({}, { message: 'validation.common.startDateInvalid' })
   startDate: string;
 
   @ApiPropertyOptional({ description: 'Data de fim (ISO 8601)' })
   @IsOptional()
-  @IsDateString({}, { message: 'Data de fim inválida.' })
+  @IsDateString({}, { message: 'validation.common.endDateInvalid' })
   endDate: string;
 }

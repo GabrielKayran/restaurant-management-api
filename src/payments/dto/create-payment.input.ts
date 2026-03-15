@@ -13,32 +13,32 @@ import {
 
 export class CreatePaymentInput {
   @ApiProperty()
-  @IsUUID('4', { message: 'ID do pedido inválido.' })
+  @IsUUID('4', { message: 'validation.payments.orderIdInvalid' })
   orderId: string;
 
   @ApiProperty({ enum: PaymentMethod })
-  @IsEnum(PaymentMethod, { message: 'Método de pagamento inválido.' })
+  @IsEnum(PaymentMethod, { message: 'validation.payments.methodInvalid' })
   method: PaymentMethod;
 
   @ApiProperty()
   @Type(() => Number)
   @IsNumber(
     { maxDecimalPlaces: 2 },
-    { message: 'O valor deve ser um número com até 2 casas decimais.' },
+    { message: 'validation.payments.amountDecimal' },
   )
-  @Min(0.01, { message: 'O valor mínimo do pagamento é R$ 0,01.' })
+  @Min(0.01, { message: 'validation.payments.amountMin' })
   amount: number;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString({ message: 'A referência deve ser um texto.' })
+  @IsString({ message: 'validation.payments.referenceMustBeString' })
   reference: string;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean({
-    message: 'O campo marcar como pago deve ser verdadeiro ou falso.',
+    message: 'validation.payments.markAsPaidBoolean',
   })
   markAsPaid: boolean = true;
 }

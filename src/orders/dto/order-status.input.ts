@@ -4,12 +4,12 @@ import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateOrderStatusInput {
   @ApiProperty({ enum: OrderStatus })
-  @IsEnum(OrderStatus, { message: 'Status do pedido inválido.' })
+  @IsEnum(OrderStatus, { message: 'validation.orders.statusInvalid' })
   status: OrderStatus;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsString({ message: 'O motivo deve ser um texto.' })
-  @MaxLength(255, { message: 'O motivo pode ter no máximo 255 caracteres.' })
+  @IsString({ message: 'validation.orders.reasonMustBeString' })
+  @MaxLength(255, { message: 'validation.orders.reasonMaxLength255' })
   reason: string;
 }

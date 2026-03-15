@@ -6,13 +6,13 @@ export class OpenTableSessionInput {
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'O número de pessoas deve ser um inteiro.' })
-  @Min(1, { message: 'O número mínimo de pessoas é 1.' })
-  @Max(30, { message: 'O número máximo de pessoas é 30.' })
+  @IsInt({ message: 'validation.tables.guestCountMustBeInteger' })
+  @Min(1, { message: 'validation.tables.guestCountMin' })
+  @Max(30, { message: 'validation.tables.guestCountMax' })
   guestCount: number;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString({ message: 'As observações devem ser um texto.' })
+  @IsString({ message: 'validation.common.notesMustBeString' })
   notes: string;
 }

@@ -10,6 +10,6 @@ export enum TableViewStatus {
 export class TablesListQueryDto {
   @ApiPropertyOptional({ enum: TableViewStatus })
   @IsOptional()
-  @IsEnum(TableViewStatus, { message: 'Status de mesa inválido.' })
+  @IsEnum(TableViewStatus, { message: 'validation.tables.statusInvalid' })
   status: TableViewStatus;
 }

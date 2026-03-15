@@ -14,35 +14,35 @@ export class PaymentsListQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'A página deve ser um número inteiro.' })
-  @Min(1, { message: 'A página mínima é 1.' })
+  @IsInt({ message: 'validation.common.pageMustBeInteger' })
+  @Min(1, { message: 'validation.common.pageMin' })
   page: number = 1;
 
   @ApiPropertyOptional({ default: 10 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'O limite deve ser um número inteiro.' })
-  @Min(1, { message: 'O limite mínimo é 1.' })
-  @Max(100, { message: 'O limite máximo é 100.' })
+  @IsInt({ message: 'validation.common.limitMustBeInteger' })
+  @Min(1, { message: 'validation.common.limitMin' })
+  @Max(100, { message: 'validation.common.limitMax100' })
   limit: number = 10;
 
   @ApiPropertyOptional({ enum: PaymentStatus })
   @IsOptional()
-  @IsEnum(PaymentStatus, { message: 'Status de pagamento inválido.' })
+  @IsEnum(PaymentStatus, { message: 'validation.payments.statusInvalid' })
   status: PaymentStatus;
 
   @ApiPropertyOptional({ enum: PaymentMethod })
   @IsOptional()
-  @IsEnum(PaymentMethod, { message: 'Método de pagamento inválido.' })
+  @IsEnum(PaymentMethod, { message: 'validation.payments.methodInvalid' })
   method: PaymentMethod;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsDateString({}, { message: 'Data de início inválida.' })
+  @IsDateString({}, { message: 'validation.common.startDateInvalid' })
   startDate: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsDateString({}, { message: 'Data de fim inválida.' })
+  @IsDateString({}, { message: 'validation.common.endDateInvalid' })
   endDate: string;
 }

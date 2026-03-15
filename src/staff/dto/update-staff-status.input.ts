@@ -6,6 +6,6 @@ export class UpdateStaffStatusInput {
     example: false,
     description: 'Status de ativacao da conta do colaborador',
   })
-  @IsBoolean({ message: 'isActive deve ser booleano.' })
+  @IsBoolean({ message: 'validation.staff.isActiveBoolean' })
   isActive: boolean;
 }

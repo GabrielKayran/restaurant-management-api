@@ -20,6 +20,14 @@ function collectMessages(error: ValidationError): string[] {
   return [...current, ...nested];
 }
 
+function translateValidationMessage(message: string): string {
+  if (!message.includes('.')) {
+    return message;
+  }
+
+  return Messages.translate(message);
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -30,7 +38,9 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       exceptionFactory: (errors: ValidationError[]) => {
-        const messages = errors.flatMap((error) => collectMessages(error));
+        const messages = errors
+          .flatMap((error) => collectMessages(error))
+          .map((message) => translateValidationMessage(message));
         return new BadRequestException({
           statusCode: 400,
           message: messages,

@@ -15,7 +15,7 @@ export class CreateStaffInviteInput {
     example: 'colaborador@restaurante.com',
     description: 'E-mail do colaborador que recebera o convite',
   })
-  @IsEmail({}, { message: 'E-mail invalido.' })
+  @IsEmail({}, { message: 'validation.common.emailInvalid' })
   email: string;
 
   @ApiProperty({
@@ -27,14 +27,14 @@ export class CreateStaffInviteInput {
     ],
     description: 'Perfil que sera atribuido ao colaborador',
   })
-  @IsEnum(UserRole, { message: 'Role invalida.' })
+  @IsEnum(UserRole, { message: 'validation.staff.roleInvalid' })
   role: UserRole;
 
   @ApiProperty({
     example: 'uuid-da-unidade',
     description: 'Unidade onde o colaborador sera vinculado',
   })
-  @IsUUID('4', { message: 'unitId deve ser um UUID valido.' })
+  @IsUUID('4', { message: 'validation.staff.unitIdInvalid' })
   unitId: string;
 
   @ApiProperty({
@@ -43,8 +43,8 @@ export class CreateStaffInviteInput {
     description: 'Tempo de expiracao do convite em horas (padrao: 72)',
   })
   @IsOptional()
-  @IsInt({ message: 'expiresInHours deve ser um numero inteiro.' })
-  @Min(1, { message: 'expiresInHours deve ser no minimo 1 hora.' })
-  @Max(240, { message: 'expiresInHours deve ser no maximo 240 horas.' })
+  @IsInt({ message: 'validation.staff.expiresInHoursInteger' })
+  @Min(1, { message: 'validation.staff.expiresInHoursMin' })
+  @Max(240, { message: 'validation.staff.expiresInHoursMax' })
   expiresInHours?: number;
 }

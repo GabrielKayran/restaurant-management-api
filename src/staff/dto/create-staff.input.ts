@@ -7,23 +7,23 @@ export class CreateStaffInput {
     example: 'Carlos Lima',
     description: 'Nome completo do colaborador',
   })
-  @IsString({ message: 'O nome deve ser um texto.' })
-  @MinLength(2, { message: 'O nome deve ter no minimo 2 caracteres.' })
+  @IsString({ message: 'validation.common.nameMustBeString' })
+  @MinLength(2, { message: 'validation.common.nameMinLength2' })
   name: string;
 
   @ApiProperty({
     example: 'carlos@restaurante.com',
     description: 'E-mail do colaborador',
   })
-  @IsEmail({}, { message: 'E-mail invalido.' })
+  @IsEmail({}, { message: 'validation.common.emailInvalid' })
   email: string;
 
   @ApiProperty({
     example: '123456',
     description: 'Senha inicial do colaborador',
   })
-  @IsString({ message: 'A senha deve ser um texto.' })
-  @MinLength(6, { message: 'A senha deve ter no minimo 6 caracteres.' })
+  @IsString({ message: 'validation.common.passwordMustBeString' })
+  @MinLength(6, { message: 'validation.common.passwordMinLength6' })
   password: string;
 
   @ApiProperty({
@@ -35,13 +35,13 @@ export class CreateStaffInput {
     ],
     description: 'Perfil do colaborador na unidade',
   })
-  @IsEnum(UserRole, { message: 'Role invalida.' })
+  @IsEnum(UserRole, { message: 'validation.staff.roleInvalid' })
   role: UserRole;
 
   @ApiProperty({
     example: 'uuid-da-unidade',
     description: 'Unidade onde o colaborador vai atuar',
   })
-  @IsUUID('4', { message: 'unitId deve ser um UUID valido.' })
+  @IsUUID('4', { message: 'validation.staff.unitIdInvalid' })
   unitId: string;
 }

@@ -592,7 +592,7 @@ export class StaffService {
     const normalizedValue = value.trim();
 
     if (!normalizedValue) {
-      throw new BadRequestException(`O campo ${fieldName} e obrigatorio.`);
+      throw new BadRequestException(Messages.FIELD_REQUIRED(fieldName));
     }
 
     return normalizedValue;

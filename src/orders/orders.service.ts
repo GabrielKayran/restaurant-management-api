@@ -237,7 +237,7 @@ export class OrdersService {
           orderId: createdOrder.id,
           fromStatus: null,
           toStatus: OrderStatus.PENDING,
-          reason: 'Order created',
+          reason: Messages.ORDER_CREATED,
           changedByUserId: scope.userId,
         },
       });

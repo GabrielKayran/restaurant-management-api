@@ -156,7 +156,7 @@ export class TablesService {
           orderId: created.id,
           fromStatus: null,
           toStatus: OrderStatus.PENDING,
-          reason: 'Order created from table',
+          reason: Messages.ORDER_CREATED_FROM_TABLE,
           changedByUserId: scope.userId,
         },
       });

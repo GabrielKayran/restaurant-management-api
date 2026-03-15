@@ -5,21 +5,21 @@ import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 export class UpdateOrderInput {
   @ApiPropertyOptional({ enum: OrderType })
   @IsOptional()
-  @IsEnum(OrderType, { message: 'Tipo de pedido inválido.' })
+  @IsEnum(OrderType, { message: 'validation.orders.typeInvalid' })
   type: OrderType;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID('4', { message: 'ID do cliente inválido.' })
+  @IsUUID('4', { message: 'validation.orders.customerIdInvalid' })
   customerId: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID('4', { message: 'ID da mesa inválido.' })
+  @IsUUID('4', { message: 'validation.orders.tableIdInvalid' })
   tableId: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString({ message: 'As observações devem ser um texto.' })
+  @IsString({ message: 'validation.common.notesMustBeString' })
   notes: string;
 }

@@ -12,12 +12,10 @@ import { PasswordService } from './password.service';
 import { SignupInput } from './dto/signup.input';
 import { Token } from './models/token.model';
 import { SecurityConfig } from '../common/configs/config.interface';
+import { Messages } from '../common/i18n/messages';
 
 @Injectable()
 export class AuthService {
-  private static readonly INVALID_CREDENTIALS_MESSAGE =
-    'Credenciais invalidas.';
-
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
@@ -103,18 +101,16 @@ export class AuthService {
         const target = (error.meta?.target as string[]) ?? [];
 
         if (target.includes('email')) {
-          throw new ConflictException('Este email ja esta em uso.');
+          throw new ConflictException(Messages.EMAIL_ALREADY_IN_USE);
         }
 
         if (target.includes('slug')) {
           throw new ConflictException(
-            'Ja existe um tenant ou unidade com este nome. Escolha um nome diferente para o tenant ou unidade.',
+            Messages.TENANT_OR_UNIT_NAME_ALREADY_EXISTS,
           );
         }
 
-        throw new ConflictException(
-          'Email ou identificador do tenant/unidade ja esta em uso.',
-        );
+        throw new ConflictException(Messages.IDENTITY_ALREADY_IN_USE);
       }
       throw error;
     }
@@ -134,7 +130,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException(AuthService.INVALID_CREDENTIALS_MESSAGE);
+      throw new UnauthorizedException(Messages.INVALID_CREDENTIALS);
     }
 
     const passwordValid = await this.passwordService.validatePassword(
@@ -143,7 +139,7 @@ export class AuthService {
     );
 
     if (!passwordValid || !user.isActive) {
-      throw new UnauthorizedException(AuthService.INVALID_CREDENTIALS_MESSAGE);
+      throw new UnauthorizedException(Messages.INVALID_CREDENTIALS);
     }
 
     return this.generateTokens({
@@ -264,7 +260,7 @@ export class AuthService {
     const normalizedValue = value.trim();
 
     if (!normalizedValue) {
-      throw new BadRequestException(`O campo ${fieldName} e obrigatorio.`);
+      throw new BadRequestException(Messages.FIELD_REQUIRED(fieldName));
     }
 
     return normalizedValue;

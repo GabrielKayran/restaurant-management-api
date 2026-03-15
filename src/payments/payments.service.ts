@@ -183,7 +183,7 @@ export class PaymentsService {
               userId: scope.userId,
               type: CashMovementType.SALE,
               amount: new Prisma.Decimal(amount.toFixed(2)),
-              description: `Payment for order #${order.code}`,
+              description: Messages.PAYMENT_DESCRIPTION_FOR_ORDER(order.code),
             },
           });
         }
