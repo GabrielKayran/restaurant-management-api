@@ -5,6 +5,7 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { Messages } from './common/i18n/messages';
 import type {
   CorsConfig,
   NestConfig,
@@ -33,7 +34,7 @@ async function bootstrap() {
         return new BadRequestException({
           statusCode: 400,
           message: messages,
-          error: 'Requisição inválida',
+          error: Messages.REQUEST_INVALID,
         });
       },
     }),

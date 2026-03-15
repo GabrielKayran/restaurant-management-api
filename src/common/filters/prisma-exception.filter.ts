@@ -2,6 +2,7 @@ import { ArgumentsHost, Catch, HttpStatus } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
+import { Messages } from '../i18n/messages';
 
 @Catch(Prisma.PrismaClientKnownRequestError)
 export class PrismaExceptionFilter extends BaseExceptionFilter {
@@ -13,36 +14,35 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
       case 'P2002':
         response.status(HttpStatus.CONFLICT).json({
           statusCode: HttpStatus.CONFLICT,
-          message: 'Já existe um registro com este valor único.',
+          message: Messages.DB_UNIQUE_CONSTRAINT,
         });
         break;
 
       case 'P2003':
         response.status(HttpStatus.BAD_REQUEST).json({
           statusCode: HttpStatus.BAD_REQUEST,
-          message: 'Operação inválida: referência a um registro inexistente.',
+          message: Messages.DB_FOREIGN_KEY,
         });
         break;
 
       case 'P2025':
         response.status(HttpStatus.NOT_FOUND).json({
           statusCode: HttpStatus.NOT_FOUND,
-          message: 'Registro não encontrado.',
+          message: Messages.DB_RECORD_NOT_FOUND,
         });
         break;
 
       case 'P2014':
         response.status(HttpStatus.BAD_REQUEST).json({
           statusCode: HttpStatus.BAD_REQUEST,
-          message:
-            'Não é possível realizar esta operação pois existem registros relacionados.',
+          message: Messages.DB_RELATION_CONSTRAINT,
         });
         break;
 
       default:
         response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Erro interno no banco de dados.',
+          message: Messages.DB_INTERNAL,
         });
         break;
     }

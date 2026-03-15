@@ -19,6 +19,9 @@ const config: Config = {
     refreshIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     bcryptSaltOrRound: 10,
   },
+  i18n: {
+    fallbackLanguage: process.env.I18N_FALLBACK_LANGUAGE || 'pt-BR',
+  },
 };
 
 export default (): Config => config;

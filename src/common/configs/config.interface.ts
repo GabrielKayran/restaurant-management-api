@@ -3,6 +3,7 @@ export interface Config {
   cors: CorsConfig;
   swagger: SwaggerConfig;
   security: SecurityConfig;
+  i18n: I18nConfig;
 }
 
 export interface NestConfig {
@@ -32,4 +33,8 @@ export interface SecurityConfig {
   expiresIn: string;
   refreshIn: string;
   bcryptSaltOrRound: string | number;
+}
+
+export interface I18nConfig {
+  fallbackLanguage: string;
 }

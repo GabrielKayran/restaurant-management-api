@@ -6,6 +6,7 @@
     "deleteOutDir": true,
     "builder": "swc",
     "typeCheck": true,
-    "plugins": ["@nestjs/swagger/plugin"]
+    "plugins": ["@nestjs/swagger/plugin"],
+    "assets": ["common/i18n/locales/**/*"]
   }
 }
