@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiUnitHeader } from '../common/decorators/api-unit-header.decorator';
 import { CurrentScope } from '../common/decorators/current-scope.decorator';
 import { UnitScopeGuard } from '../common/guards/unit-scope.guard';
 import { RequestScope } from '../common/models/request-scope.model';
@@ -23,6 +24,7 @@ import { TablesService } from './tables.service';
 
 @ApiTags('Tables')
 @ApiBearerAuth()
+@ApiUnitHeader()
 @UseGuards(JwtAuthGuard, UnitScopeGuard)
 @Controller('tables')
 export class TablesController {

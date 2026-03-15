@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiUnitHeader } from '../common/decorators/api-unit-header.decorator';
 import { CurrentScope } from '../common/decorators/current-scope.decorator';
 import { UnitScopeGuard } from '../common/guards/unit-scope.guard';
 import { RequestScope } from '../common/models/request-scope.model';
@@ -12,6 +13,7 @@ import { PaymentsService } from './payments.service';
 
 @ApiTags('Payments')
 @ApiBearerAuth()
+@ApiUnitHeader()
 @UseGuards(JwtAuthGuard, UnitScopeGuard)
 @Controller('payments')
 export class PaymentsController {
