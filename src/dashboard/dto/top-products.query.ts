@@ -14,5 +14,5 @@ export class TopProductsQuery extends DashboardDateRangeQuery {
   @IsInt({ message: 'limit deve ser um número inteiro.' })
   @Min(1, { message: 'limit deve ser no mínimo 1.' })
   @Max(20, { message: 'limit deve ser no máximo 20.' })
-  limit = 5;
+  limit: number = 5;
 }

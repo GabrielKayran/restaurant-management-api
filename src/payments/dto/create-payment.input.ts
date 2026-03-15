@@ -40,5 +40,5 @@ export class CreatePaymentInput {
   @IsBoolean({
     message: 'O campo marcar como pago deve ser verdadeiro ou falso.',
   })
-  markAsPaid = true;
+  markAsPaid: boolean = true;
 }

@@ -100,6 +100,18 @@ export class AuthService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
+        const target = (error.meta?.target as string[]) ?? [];
+
+        if (target.includes('email')) {
+          throw new ConflictException('Este email ja esta em uso.');
+        }
+
+        if (target.includes('slug')) {
+          throw new ConflictException(
+            'Ja existe um tenant ou unidade com este nome. Escolha um nome diferente para o tenant ou unidade.',
+          );
+        }
+
         throw new ConflictException(
           'Email ou identificador do tenant/unidade ja esta em uso.',
         );

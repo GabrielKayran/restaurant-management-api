@@ -13,5 +13,5 @@ export class RecentOrdersQuery {
   @IsInt({ message: 'limit deve ser um número inteiro.' })
   @Min(1, { message: 'limit deve ser no mínimo 1.' })
   @Max(50, { message: 'limit deve ser no máximo 50.' })
-  limit = 10;
+  limit: number = 10;
 }

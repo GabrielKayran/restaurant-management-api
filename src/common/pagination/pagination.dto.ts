@@ -12,7 +12,7 @@ export class PaginationDto {
   @Type(() => Number)
   @IsInt({ message: 'page deve ser um número inteiro.' })
   @Min(1, { message: 'page deve ser no mínimo 1.' })
-  page = 1;
+  page: number = 1;
 
   @ApiProperty({
     description: 'Quantidade de itens por página',
@@ -23,5 +23,5 @@ export class PaginationDto {
   @Type(() => Number)
   @IsInt({ message: 'limit deve ser um número inteiro.' })
   @Min(1, { message: 'limit deve ser no mínimo 1.' })
-  limit = 10;
+  limit: number = 10;
 }

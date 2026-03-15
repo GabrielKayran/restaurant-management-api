@@ -17,7 +17,7 @@ export class OrdersListQueryDto {
   @Type(() => Number)
   @IsInt({ message: 'A página deve ser um número inteiro.' })
   @Min(1, { message: 'A página mínima é 1.' })
-  page = 1;
+  page: number = 1;
 
   @ApiPropertyOptional({ example: 10, default: 10 })
   @IsOptional()
@@ -25,7 +25,7 @@ export class OrdersListQueryDto {
   @IsInt({ message: 'O limite deve ser um número inteiro.' })
   @Min(1, { message: 'O limite mínimo é 1.' })
   @Max(100, { message: 'O limite máximo é 100.' })
-  limit = 10;
+  limit: number = 10;
 
   @ApiPropertyOptional({
     description: 'Código do pedido, nome da mesa ou nome do cliente',

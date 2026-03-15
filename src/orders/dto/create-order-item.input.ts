@@ -22,7 +22,7 @@ export class CreateOrderItemOptionInput {
   @IsInt({ message: 'A quantidade deve ser um número inteiro.' })
   @Min(1, { message: 'A quantidade mínima é 1.' })
   @Max(20, { message: 'A quantidade máxima é 20.' })
-  quantity = 1;
+  quantity: number = 1;
 }
 
 export class CreateOrderItemInput {
