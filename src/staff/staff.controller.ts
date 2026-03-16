@@ -10,8 +10,11 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiOkResponse,
   ApiOperation,
-  ApiResponse,
+  ApiUnauthorizedResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
@@ -39,12 +42,28 @@ export class StaffController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({
-    summary: 'Cadastra colaborador interno para uma unidade do tenant atual',
+    summary: 'Create staff member',
+    description:
+      'Creates and links an internal staff member to a unit in the current tenant context.',
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Colaborador vinculado com sucesso',
+  @ApiCreatedResponse({
+    description: 'Staff member created and linked successfully.',
     type: StaffResponseDto,
+    schema: {
+      example: {
+        userId: 'uuid-do-usuario',
+        name: 'Carlos Lima',
+        email: 'carlos@restaurante.com',
+        tenantId: 'uuid-do-tenant',
+        unitId: 'uuid-da-unidade',
+        role: 'WAITER',
+        isActive: true,
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User does not have enough permission.',
   })
   createStaff(
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -58,12 +77,28 @@ export class StaffController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({
-    summary: 'Cria convite para colaborador no tenant atual',
+    summary: 'Create staff invite',
+    description:
+      'Creates an invite token so a collaborator can join the current tenant and unit.',
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Convite criado com sucesso',
+  @ApiCreatedResponse({
+    description: 'Staff invite created successfully.',
     type: StaffInviteResponseDto,
+    schema: {
+      example: {
+        inviteId: 'uuid-do-convite',
+        email: 'colaborador@restaurante.com',
+        tenantId: 'uuid-do-tenant',
+        unitId: 'uuid-da-unidade',
+        role: 'WAITER',
+        status: 'PENDING',
+        token: 'TOKEN_DE_CONVITE',
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User does not have enough permission.',
   })
   inviteStaff(
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -74,12 +109,24 @@ export class StaffController {
 
   @Post('accept-invite')
   @ApiOperation({
-    summary: 'Aceita convite de colaborador e ativa vinculos de acesso',
+    summary: 'Accept staff invite',
+    description:
+      'Validates an invite token and activates tenant and unit membership for the invited collaborator.',
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Convite aceito com sucesso',
+  @ApiCreatedResponse({
+    description: 'Staff invite accepted successfully.',
     type: StaffResponseDto,
+    schema: {
+      example: {
+        userId: 'uuid-do-usuario',
+        name: 'Carlos Lima',
+        email: 'carlos@restaurante.com',
+        tenantId: 'uuid-do-tenant',
+        unitId: 'uuid-da-unidade',
+        role: 'WAITER',
+        isActive: true,
+      },
+    },
   })
   acceptInvite(
     @Body() input: AcceptStaffInviteInput,
@@ -92,12 +139,28 @@ export class StaffController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({
-    summary: 'Lista colaboradores do tenant atual',
+    summary: 'List tenant staff members',
+    description: 'Lists all collaborators linked to the current tenant.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Colaboradores listados com sucesso',
-    type: [StaffListItemDto],
+  @ApiOkResponse({
+    description: 'Staff members listed successfully.',
+    type: StaffListItemDto,
+    isArray: true,
+    schema: {
+      example: [
+        {
+          userId: 'uuid-do-usuario',
+          name: 'Carlos Lima',
+          email: 'carlos@restaurante.com',
+          isActive: true,
+          role: 'WAITER',
+        },
+      ],
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User does not have enough permission.',
   })
   listStaff(
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -110,12 +173,26 @@ export class StaffController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({
-    summary: 'Atualiza status de ativacao de colaborador no tenant atual',
+    summary: 'Update staff active status',
+    description:
+      'Activates or deactivates a collaborator in the current tenant.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Status do colaborador atualizado com sucesso',
+  @ApiOkResponse({
+    description: 'Staff status updated successfully.',
     type: StaffListItemDto,
+    schema: {
+      example: {
+        userId: 'uuid-do-usuario',
+        name: 'Carlos Lima',
+        email: 'carlos@restaurante.com',
+        isActive: false,
+        role: 'WAITER',
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User does not have enough permission.',
   })
   updateStaffStatus(
     @CurrentUser() currentUser: AuthenticatedUser,

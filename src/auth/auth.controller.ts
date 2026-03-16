@@ -1,13 +1,16 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
-  ApiResponse,
+  ApiUnauthorizedResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { RefreshInput } from './dto/refresh.input';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LoginInput } from './dto/login.input';
 import { SignupInput } from './dto/signup.input';
@@ -21,12 +24,19 @@ export class AuthController {
 
   @Post('signup')
   @ApiOperation({
-    summary: 'Cadastrar novo tenant com usuario owner',
+    summary: 'Register owner account and initial tenant',
+    description:
+      'Creates a new owner user, tenant and initial unit, returning access and refresh tokens.',
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Usuario e tenant criados com sucesso',
+  @ApiCreatedResponse({
+    description: 'Owner account and tenant created successfully.',
     type: Token,
+    schema: {
+      example: {
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh-token',
+      },
+    },
   })
   signup(@Body() input: SignupInput): Promise<Token> {
     return this.authService.createUser(input);
@@ -34,41 +44,74 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({
-    summary: 'Login',
+    summary: 'Authenticate user',
+    description: 'Authenticates credentials and returns a new token pair.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Login realizado com sucesso',
+  @ApiOkResponse({
+    description: 'User authenticated successfully.',
     type: Token,
+    schema: {
+      example: {
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh-token',
+      },
+    },
   })
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials.' })
   login(@Body() input: LoginInput): Promise<Token> {
     return this.authService.login(input.email, input.password);
   }
 
   @Post('refresh')
   @ApiOperation({
-    summary: 'Renovar token',
+    summary: 'Refresh token pair',
+    description:
+      'Rotates tokens using a valid refresh token and returns a fresh access and refresh token pair.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Token renovado com sucesso',
+  @ApiOkResponse({
+    description: 'Token pair refreshed successfully.',
     type: Token,
+    schema: {
+      example: {
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new-access-token',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new-refresh-token',
+      },
+    },
   })
-  refresh(@Body('refreshToken') refreshToken: string): Token {
-    return this.authService.refreshToken(refreshToken);
+  @ApiUnauthorizedResponse({ description: 'Invalid or expired refresh token.' })
+  refresh(@Body() input: RefreshInput): Token {
+    return this.authService.refreshToken(input.refreshToken);
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Usuario autenticado',
+    summary: 'Get authenticated user profile',
+    description: 'Returns profile and scoped roles for the authenticated user.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Dados do usuario retornados com sucesso',
+  @ApiOkResponse({
+    description: 'Authenticated user profile returned successfully.',
     type: UserResponseDto,
+    schema: {
+      example: {
+        id: '34d2d39a-2f7a-4f9c-ae6d-e1dc3eb9ddf4',
+        name: 'Ana Paula Souza',
+        email: 'ana@sabormineiro.com',
+        isActive: true,
+        memberships: [
+          {
+            tenantId: 'tenant-id',
+            role: 'OWNER',
+            unitIds: ['unit-id'],
+          },
+        ],
+        createdAt: '2026-03-14T13:00:00.000Z',
+        updatedAt: '2026-03-14T13:00:00.000Z',
+      },
+    },
   })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
   me(@CurrentUser() user: User) {
     return this.authService.getMe(user.id);
   }
