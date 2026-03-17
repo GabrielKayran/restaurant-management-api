@@ -71,7 +71,8 @@
       "recordNotFound": "Registro nao encontrado.",
       "relationConstraint": "Nao e possivel realizar esta operacao pois existem registros relacionados.",
       "internal": "Erro interno no banco de dados."
-    }
+    },
+    "message": "{{message}}"
   },
   "validation": {
     "common": {
@@ -156,7 +157,8 @@
       "imageUrlMustBeString": "A URL da imagem deve ser um texto.",
       "isActiveBoolean": "O campo ativo deve ser verdadeiro ou falso.",
       "isActiveFilterBoolean": "O filtro de ativo deve ser verdadeiro ou falso."
-    }
+    },
+    "message": "{{message}}"
   },
   "messages": {
     "orders": {
@@ -165,7 +167,7 @@
     },
     "payments": {
       "descriptionForOrder": "Pagamento do pedido #{{orderCode}}"
-    }
+    },
+    "message": "{{message}}"
   }
 }
-

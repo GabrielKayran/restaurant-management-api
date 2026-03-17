@@ -8,6 +8,7 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { PasswordService } from '../auth/password.service';
 import { AuthenticatedUser } from '../auth/models/authenticated-user.model';
+import { NormalizationService } from '../common/services/normalization.service';
 import { StaffService } from './staff.service';
 
 describe('StaffService', () => {
@@ -23,6 +24,10 @@ describe('StaffService', () => {
     $transaction: jest.Mock;
   };
   let passwordService: { hashPassword: jest.Mock };
+  let normalizationService: {
+    normalizeEmail: jest.Mock;
+    normalizeRequiredField: jest.Mock;
+  };
 
   const creator = {
     id: 'creator-1',
@@ -45,9 +50,15 @@ describe('StaffService', () => {
       hashPassword: jest.fn(),
     };
 
+    normalizationService = {
+      normalizeEmail: jest.fn((email: string) => email.trim().toLowerCase()),
+      normalizeRequiredField: jest.fn((value: string) => value.trim()),
+    };
+
     service = new StaffService(
       prisma as unknown as PrismaService,
       passwordService as unknown as PasswordService,
+      normalizationService as unknown as NormalizationService,
     );
   });
 

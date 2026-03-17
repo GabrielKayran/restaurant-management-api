@@ -10,7 +10,6 @@ import { PrismaService } from 'nestjs-prisma';
 import { UserRole } from '@prisma/client';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthenticatedUser } from '../models/authenticated-user.model';
-import { Messages } from '../../common/i18n/messages';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -33,11 +32,11 @@ export class RolesGuard implements CanActivate {
     const user = request.user as AuthenticatedUser | undefined;
 
     if (!user?.id) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     if (!user.auth?.tenantId) {
-      throw new ForbiddenException(Messages.TENANT_CONTEXT_REQUIRED);
+      throw new ForbiddenException('errors.auth.tenantContextRequired');
     }
 
     const tenantRoles = await this.prisma.userTenantRole.findMany({
@@ -55,7 +54,7 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!hasPermission) {
-      throw new ForbiddenException(Messages.NO_PERMISSION);
+      throw new ForbiddenException('errors.auth.noPermission');
     }
 
     return true;

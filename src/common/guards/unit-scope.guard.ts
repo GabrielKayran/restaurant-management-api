@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { AuthenticatedUser } from '../../auth/models/authenticated-user.model';
-import { Messages } from '../i18n/messages';
 import { RequestScope } from '../models/request-scope.model';
 
 @Injectable()
@@ -26,20 +25,20 @@ export class UnitScopeGuard implements CanActivate {
     const user = request.user;
 
     if (!user?.id) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     const tenantId = user.auth?.tenantId;
 
     if (!tenantId) {
-      throw new ForbiddenException(Messages.TENANT_CONTEXT_REQUIRED);
+      throw new ForbiddenException('errors.auth.tenantContextRequired');
     }
 
     const rawHeader = request.headers[UnitScopeGuard.UNIT_HEADER];
     const unitId = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
 
     if (!unitId || !this.isUuid(unitId)) {
-      throw new ForbiddenException(Messages.UNIT_HEADER_REQUIRED);
+      throw new ForbiddenException('errors.scope.unitHeaderRequired');
     }
 
     const unitRole = await this.prisma.userUnitRole.findFirst({
@@ -61,7 +60,7 @@ export class UnitScopeGuard implements CanActivate {
     });
 
     if (!unitRole) {
-      throw new ForbiddenException(Messages.UNIT_ACCESS_DENIED);
+      throw new ForbiddenException('errors.scope.unitAccessDenied');
     }
 
     request.scope = {

@@ -2,6 +2,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'nestjs-prisma';
+import { NormalizationService } from '../common/services/normalization.service';
 import { AuthService } from './auth.service';
 import { PasswordService } from './password.service';
 
@@ -19,6 +20,12 @@ describe('AuthService', () => {
   };
   let configService: {
     get: jest.Mock;
+  };
+  let normalizationService: {
+    normalizeEmail: jest.Mock;
+    normalizeRequiredField: jest.Mock;
+    normalizeOptionalField: jest.Mock;
+    slugify: jest.Mock;
   };
 
   beforeEach(() => {
@@ -55,11 +62,19 @@ describe('AuthService', () => {
       }),
     };
 
+    normalizationService = {
+      normalizeEmail: jest.fn((email: string) => email.trim().toLowerCase()),
+      normalizeRequiredField: jest.fn((value: string) => value.trim()),
+      normalizeOptionalField: jest.fn((value?: string) => value?.trim()),
+      slugify: jest.fn((value: string) => value.trim().toLowerCase()),
+    };
+
     service = new AuthService(
       jwtService,
       prismaService as unknown as PrismaService,
       passwordService as unknown as PasswordService,
       configService as unknown as ConfigService,
+      normalizationService as unknown as NormalizationService,
     );
   });
 
@@ -84,6 +99,9 @@ describe('AuthService', () => {
         },
       },
     });
+    expect(normalizationService.normalizeEmail).toHaveBeenCalledWith(
+      '  OWNER@RESTAURANTE.COM  ',
+    );
     expect(result).toEqual({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',

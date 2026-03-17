@@ -201,44 +201,8 @@ export class Messages {
     return translateRaw(key, args);
   }
 
-  static get INVALID_CREDENTIALS(): string {
-    return translate(MESSAGE_KEYS.INVALID_CREDENTIALS);
-  }
-
-  static get EMAIL_ALREADY_IN_USE(): string {
-    return translate(MESSAGE_KEYS.EMAIL_ALREADY_IN_USE);
-  }
-
-  static get TENANT_OR_UNIT_NAME_ALREADY_EXISTS(): string {
-    return translate(MESSAGE_KEYS.TENANT_OR_UNIT_NAME_ALREADY_EXISTS);
-  }
-
-  static get IDENTITY_ALREADY_IN_USE(): string {
-    return translate(MESSAGE_KEYS.IDENTITY_ALREADY_IN_USE);
-  }
-
-  static get TENANT_CONTEXT_REQUIRED(): string {
-    return translate(MESSAGE_KEYS.TENANT_CONTEXT_REQUIRED);
-  }
-
-  static get UNIT_HEADER_REQUIRED(): string {
-    return translate(MESSAGE_KEYS.UNIT_HEADER_REQUIRED);
-  }
-
-  static get UNIT_ACCESS_DENIED(): string {
-    return translate(MESSAGE_KEYS.UNIT_ACCESS_DENIED);
-  }
-
-  static get NO_PERMISSION(): string {
-    return translate(MESSAGE_KEYS.NO_PERMISSION);
-  }
-
   static get REQUEST_INVALID(): string {
     return translate(MESSAGE_KEYS.REQUEST_INVALID);
-  }
-
-  static FIELD_REQUIRED(field: string): string {
-    return translate(MESSAGE_KEYS.FIELD_REQUIRED, { field });
   }
 
   static get ORDER_NOT_FOUND(): string {

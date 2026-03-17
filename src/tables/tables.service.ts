@@ -61,7 +61,7 @@ export class TablesService {
     const table = tables[0];
 
     if (!table) {
-      throw new NotFoundException(Messages.TABLE_NOT_FOUND);
+      throw new NotFoundException('errors.tables.notFound');
     }
 
     return table;
@@ -83,7 +83,7 @@ export class TablesService {
     });
 
     if (openSession) {
-      throw new BadRequestException(Messages.TABLE_SESSION_ALREADY_OPEN);
+      throw new BadRequestException('errors.tables.sessionAlreadyOpen');
     }
 
     const session = await this.prisma.tableSession.create({
@@ -181,7 +181,7 @@ export class TablesService {
     const end = new Date(input.reservedForEnd);
 
     if (end <= start) {
-      throw new BadRequestException(Messages.RESERVATION_END_BEFORE_START);
+      throw new BadRequestException('errors.tables.reservationEndBeforeStart');
     }
 
     const overlap = await this.prisma.tableReservation.findFirst({
@@ -213,7 +213,7 @@ export class TablesService {
     });
 
     if (overlap) {
-      throw new BadRequestException(Messages.RESERVATION_CONFLICT);
+      throw new BadRequestException('errors.tables.reservationConflict');
     }
 
     const reservation = await this.prisma.tableReservation.create({
@@ -356,7 +356,7 @@ export class TablesService {
     });
 
     if (!table) {
-      throw new NotFoundException(Messages.TABLE_NOT_FOUND);
+      throw new NotFoundException('errors.tables.notFound');
     }
 
     return table;

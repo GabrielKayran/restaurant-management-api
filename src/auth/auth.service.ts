@@ -2,7 +2,6 @@ import { Prisma, User, UserRole } from '@prisma/client';
 import {
   ConflictException,
   Injectable,
-  BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -12,7 +11,7 @@ import { PasswordService } from './password.service';
 import { SignupInput } from './dto/signup.input';
 import { Token } from './models/token.model';
 import { SecurityConfig } from '../common/configs/config.interface';
-import { Messages } from '../common/i18n/messages';
+import { NormalizationService } from '../common/services/normalization.service';
 
 @Injectable()
 export class AuthService {
@@ -21,25 +20,34 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwordService: PasswordService,
     private readonly configService: ConfigService,
+    private readonly normalizationService: NormalizationService,
   ) {}
 
   async createUser(payload: SignupInput): Promise<Token> {
-    const normalizedEmail = this.normalizeEmail(payload.email);
-    const normalizedName = this.normalizeRequiredField(payload.name, 'nome');
-    const normalizedTenantName = this.normalizeRequiredField(
-      payload.tenantName,
-      'tenant',
+    const normalizedEmail = this.normalizationService.normalizeEmail(
+      payload.email,
     );
-    const normalizedUnitName = this.normalizeRequiredField(
+    const normalizedName = this.normalizationService.normalizeRequiredField(
+      payload.name,
+      'nome',
+    );
+    const normalizedTenantName =
+      this.normalizationService.normalizeRequiredField(
+        payload.tenantName,
+        'tenant',
+      );
+    const normalizedUnitName = this.normalizationService.normalizeRequiredField(
       payload.unitName,
       'unidade',
     );
-    const normalizedPhone = this.normalizeOptionalField(payload.phone);
+    const normalizedPhone = this.normalizationService.normalizeOptionalField(
+      payload.phone,
+    );
     const hashedPassword = await this.passwordService.hashPassword(
       payload.password,
     );
-    const tenantSlug = this.slugify(normalizedTenantName);
-    const unitSlug = this.slugify(
+    const tenantSlug = this.normalizationService.slugify(normalizedTenantName);
+    const unitSlug = this.normalizationService.slugify(
       `${normalizedTenantName}-${normalizedUnitName}`,
     );
 
@@ -101,23 +109,23 @@ export class AuthService {
         const target = (error.meta?.target as string[]) ?? [];
 
         if (target.includes('email')) {
-          throw new ConflictException(Messages.EMAIL_ALREADY_IN_USE);
+          throw new ConflictException('errors.auth.emailAlreadyInUse');
         }
 
         if (target.includes('slug')) {
           throw new ConflictException(
-            Messages.TENANT_OR_UNIT_NAME_ALREADY_EXISTS,
+            'errors.auth.tenantOrUnitNameAlreadyExists',
           );
         }
 
-        throw new ConflictException(Messages.IDENTITY_ALREADY_IN_USE);
+        throw new ConflictException('errors.auth.identityAlreadyInUse');
       }
       throw error;
     }
   }
 
   async login(email: string, password: string): Promise<Token> {
-    const normalizedEmail = this.normalizeEmail(email);
+    const normalizedEmail = this.normalizationService.normalizeEmail(email);
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: {
@@ -130,7 +138,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException(Messages.INVALID_CREDENTIALS);
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     const passwordValid = await this.passwordService.validatePassword(
@@ -139,7 +147,7 @@ export class AuthService {
     );
 
     if (!passwordValid || !user.isActive) {
-      throw new UnauthorizedException(Messages.INVALID_CREDENTIALS);
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     return this.generateTokens({
@@ -154,7 +162,7 @@ export class AuthService {
     });
 
     if (!user || !user.isActive) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     return user;
@@ -174,7 +182,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     return user;
@@ -195,13 +203,13 @@ export class AuthService {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
       });
     } catch {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     const userId = payload.sub ?? payload.userId;
 
     if (!userId) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     return this.generateTokens({ userId, tenantId: payload.tenantId });
@@ -250,34 +258,5 @@ export class AuthService {
     }
 
     return undefined;
-  }
-
-  private normalizeEmail(email: string): string {
-    return email.trim().toLowerCase();
-  }
-
-  private normalizeRequiredField(value: string, fieldName: string): string {
-    const normalizedValue = value.trim();
-
-    if (!normalizedValue) {
-      throw new BadRequestException(Messages.FIELD_REQUIRED(fieldName));
-    }
-
-    return normalizedValue;
-  }
-
-  private normalizeOptionalField(value?: string): string | undefined {
-    const normalizedValue = value?.trim();
-
-    return normalizedValue ? normalizedValue : undefined;
-  }
-
-  private slugify(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
   }
 }

@@ -22,12 +22,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const userId = payload.sub ?? payload.userId;
 
     if (!userId) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     const user = await this.authService.validateUser(userId);
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     return {
