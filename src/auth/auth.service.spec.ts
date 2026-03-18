@@ -174,4 +174,76 @@ describe('AuthService', () => {
       tenantId: 'tenant-legacy',
     });
   });
+
+  it('returns user profile with tenant and unit roles for unit-scoped requests', async () => {
+    prismaService.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      name: 'Owner',
+      email: 'owner@restaurante.com',
+      isActive: true,
+      createdAt: new Date('2026-03-14T13:00:00.000Z'),
+      updatedAt: new Date('2026-03-14T13:00:00.000Z'),
+      tenantRoles: [{ tenantId: 'tenant-1', role: 'OWNER' }],
+      unitRoles: [
+        {
+          role: 'OWNER',
+          unit: {
+            id: 'unit-1',
+            name: 'Unidade Centro',
+            tenantId: 'tenant-1',
+          },
+        },
+      ],
+    });
+
+    const result = await service.getMe('user-1');
+
+    expect(prismaService.user.findUnique).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        tenantRoles: {
+          select: {
+            tenantId: true,
+            role: true,
+          },
+        },
+        unitRoles: {
+          select: {
+            role: true,
+            unit: {
+              select: {
+                id: true,
+                name: true,
+                tenantId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(result).toEqual({
+      id: 'user-1',
+      name: 'Owner',
+      email: 'owner@restaurante.com',
+      isActive: true,
+      tenantRoles: [{ tenantId: 'tenant-1', role: 'OWNER' }],
+      unitRoles: [
+        {
+          id: 'unit-1',
+          name: 'Unidade Centro',
+          tenantId: 'tenant-1',
+          role: 'OWNER',
+        },
+      ],
+      createdAt: new Date('2026-03-14T13:00:00.000Z'),
+      updatedAt: new Date('2026-03-14T13:00:00.000Z'),
+    });
+    expect(result).not.toHaveProperty('passwordHash');
+  });
 });

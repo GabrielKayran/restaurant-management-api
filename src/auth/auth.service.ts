@@ -12,6 +12,7 @@ import { SignupInput } from './dto/signup.input';
 import { Token } from './models/token.model';
 import { SecurityConfig } from '../common/configs/config.interface';
 import { NormalizationService } from '../common/services/normalization.service';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -168,14 +169,32 @@ export class AuthService {
     return user;
   }
 
-  async getMe(userId: string) {
+  async getMe(userId: string): Promise<UserResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
         tenantRoles: {
           select: {
             tenantId: true,
             role: true,
+          },
+        },
+        unitRoles: {
+          select: {
+            role: true,
+            unit: {
+              select: {
+                id: true,
+                name: true,
+                tenantId: true,
+              },
+            },
           },
         },
       },
@@ -185,7 +204,21 @@ export class AuthService {
       throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
-    return user;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      isActive: user.isActive,
+      tenantRoles: user.tenantRoles,
+      unitRoles: user.unitRoles.map((unitRole) => ({
+        id: unitRole.unit.id,
+        name: unitRole.unit.name,
+        tenantId: unitRole.unit.tenantId,
+        role: unitRole.role,
+      })),
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   generateTokens(payload: { userId: string; tenantId?: string }): Token {

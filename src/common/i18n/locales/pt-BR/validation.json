@@ -1,4 +1,4 @@
-﻿{
+{
     "common":  {
                    "nameMustBeString":  "O nome deve ser um texto.",
                    "nameMinLength2":  "O nome deve ter no minimo 2 caracteres.",

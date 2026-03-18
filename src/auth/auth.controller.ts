@@ -99,11 +99,18 @@ export class AuthController {
         name: 'Ana Paula Souza',
         email: 'ana@sabormineiro.com',
         isActive: true,
-        memberships: [
+        tenantRoles: [
           {
             tenantId: 'tenant-id',
             role: 'OWNER',
-            unitIds: ['unit-id'],
+          },
+        ],
+        unitRoles: [
+          {
+            id: '4f4f7db6-68de-4fa5-b512-6e4d56e9b8f8',
+            name: 'Unidade Centro',
+            tenantId: 'tenant-id',
+            role: 'OWNER',
           },
         ],
         createdAt: '2026-03-14T13:00:00.000Z',
@@ -112,7 +119,7 @@ export class AuthController {
     },
   })
   @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
-  me(@CurrentUser() user: User) {
+  me(@CurrentUser() user: User): Promise<UserResponseDto> {
     return this.authService.getMe(user.id);
   }
 }
