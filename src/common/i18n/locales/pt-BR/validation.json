@@ -1,0 +1,88 @@
+﻿{
+    "common":  {
+                   "nameMustBeString":  "O nome deve ser um texto.",
+                   "nameMinLength2":  "O nome deve ter no minimo 2 caracteres.",
+                   "emailInvalid":  "E-mail invalido.",
+                   "passwordMustBeString":  "A senha deve ser um texto.",
+                   "passwordMinLength6":  "A senha deve ter no minimo 6 caracteres.",
+                   "phoneMustBeString":  "O telefone deve ser um texto.",
+                   "notesMustBeString":  "As observacoes devem ser um texto.",
+                   "tokenMustBeString":  "O token deve ser um texto.",
+                   "pageMustBeInteger":  "A pagina deve ser um numero inteiro.",
+                   "pageMin":  "A pagina minima e 1.",
+                   "limitMustBeInteger":  "O limite deve ser um numero inteiro.",
+                   "limitMin":  "O limite minimo e 1.",
+                   "limitMax100":  "O limite maximo e 100.",
+                   "searchMustBeString":  "A busca deve ser um texto.",
+                   "startDateInvalid":  "Data de inicio invalida.",
+                   "endDateInvalid":  "Data de fim invalida."
+               },
+    "auth":  {
+                 "tenantNameMustBeString":  "O nome do tenant deve ser um texto.",
+                 "unitNameMustBeString":  "O nome da unidade deve ser um texto.",
+                 "refreshTokenMustBeString":  "O token de atualizacao deve ser um texto.",
+                 "refreshTokenTooShort":  "O token de atualizacao informado e invalido."
+             },
+    "staff":  {
+                  "roleInvalid":  "Role invalida.",
+                  "unitIdInvalid":  "unitId deve ser um UUID valido.",
+                  "isActiveBoolean":  "isActive deve ser booleano.",
+                  "expiresInHoursInteger":  "expiresInHours deve ser um numero inteiro.",
+                  "expiresInHoursMin":  "expiresInHours deve ser no minimo 1 hora.",
+                  "expiresInHoursMax":  "expiresInHours deve ser no maximo 240 horas."
+              },
+    "orders":  {
+                   "typeInvalid":  "Tipo de pedido invalido.",
+                   "customerIdInvalid":  "ID do cliente invalido.",
+                   "tableIdInvalid":  "ID da mesa invalido.",
+                   "addressIdInvalid":  "ID do endereco invalido.",
+                   "courierIdInvalid":  "ID do entregador invalido.",
+                   "itemsMustBeArray":  "Os itens do pedido devem ser uma lista.",
+                   "optionIdInvalid":  "ID da opcao invalido.",
+                   "quantityMustBeInteger":  "A quantidade deve ser um numero inteiro.",
+                   "quantityMin":  "A quantidade minima e 1.",
+                   "quantityMax20":  "A quantidade maxima e 20.",
+                   "productIdInvalid":  "ID do produto invalido.",
+                   "variantIdInvalid":  "ID da variante invalido.",
+                   "quantityMax200":  "A quantidade maxima e 200.",
+                   "optionsMustBeArray":  "As opcoes devem ser uma lista.",
+                   "statusInvalid":  "Status do pedido invalido.",
+                   "reasonMustBeString":  "O motivo deve ser um texto.",
+                   "reasonMaxLength255":  "O motivo pode ter no maximo 255 caracteres."
+               },
+    "tables":  {
+                   "statusInvalid":  "Status de mesa invalido.",
+                   "reservationNameMustBeString":  "O nome do responsavel deve ser um texto.",
+                   "customerIdInvalid":  "ID do cliente invalido.",
+                   "guestCountMustBeInteger":  "O numero de pessoas deve ser um inteiro.",
+                   "guestCountMin":  "O numero minimo de pessoas e 1.",
+                   "guestCountMax":  "O numero maximo de pessoas e 30.",
+                   "reservationStartInvalid":  "Data de inicio da reserva invalida.",
+                   "reservationEndInvalid":  "Data de fim da reserva invalida."
+               },
+    "payments":  {
+                     "orderIdInvalid":  "ID do pedido invalido.",
+                     "methodInvalid":  "Metodo de pagamento invalido.",
+                     "amountDecimal":  "O valor deve ser um numero com ate 2 casas decimais.",
+                     "amountMin":  "O valor minimo do pagamento e R$ 0,01.",
+                     "referenceMustBeString":  "A referencia deve ser um texto.",
+                     "markAsPaidBoolean":  "O campo marcar como pago deve ser verdadeiro ou falso.",
+                     "statusInvalid":  "Status de pagamento invalido."
+                 },
+    "products":  {
+                     "nameMustBeString":  "O nome do produto deve ser um texto.",
+                     "nameMaxLength120":  "O nome pode ter no maximo 120 caracteres.",
+                     "categoryIdInvalid":  "ID de categoria invalido.",
+                     "descriptionMustBeString":  "A descricao deve ser um texto.",
+                     "descriptionMaxLength1000":  "A descricao pode ter no maximo 1000 caracteres.",
+                     "basePriceDecimal":  "O preco de venda deve ser um numero com ate 2 casas decimais.",
+                     "basePriceMin":  "O preco de venda nao pode ser negativo.",
+                     "costPriceDecimal":  "O custo deve ser um numero com ate 2 casas decimais.",
+                     "costPriceMin":  "O custo nao pode ser negativo.",
+                     "skuMustBeString":  "O SKU deve ser um texto.",
+                     "imageUrlMustBeString":  "A URL da imagem deve ser um texto.",
+                     "isActiveBoolean":  "O campo ativo deve ser verdadeiro ou falso.",
+                     "isActiveFilterBoolean":  "O filtro de ativo deve ser verdadeiro ou falso."
+                 },
+    "message":  "{{message}}"
+}

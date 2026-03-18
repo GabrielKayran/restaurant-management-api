@@ -1,0 +1,76 @@
+﻿{
+  "auth": {
+    "invalidCredentials": "Credenciais invalidas.",
+    "unauthorized": "Nao autorizado.",
+    "emailAlreadyInUse": "Este email ja esta em uso.",
+    "tenantOrUnitNameAlreadyExists": "Ja existe um tenant ou unidade com este nome. Escolha um nome diferente para o tenant ou unidade.",
+    "identityAlreadyInUse": "Email ou identificador do tenant/unidade ja esta em uso.",
+    "tenantContextRequired": "Contexto do tenant ausente no token. Faca login novamente.",
+    "tenantContextMissing": "Contexto de tenant ausente. Realize o login novamente.",
+    "noPermission": "Voce nao possui permissao para realizar esta acao."
+  },
+  "scope": {
+    "unitHeaderRequired": "O cabecalho x-unit-id e obrigatorio e deve ser um UUID valido.",
+    "unitAccessDenied": "Voce nao tem acesso a unidade solicitada neste tenant.",
+    "unitNotInTenant": "Unidade nao encontrada ou nao pertence a este tenant."
+  },
+  "common": {
+    "requestInvalid": "Requisicao invalida",
+    "fieldRequired": "O campo {{field}} e obrigatorio."
+  },
+  "orders": {
+    "notFound": "Pedido nao encontrado nesta unidade.",
+    "mustHaveItems": "O pedido deve conter ao menos um item.",
+    "dineInRequiresTable": "Pedidos no local exigem uma mesa.",
+    "productsInvalidForUnit": "Um ou mais produtos sao invalidos para esta unidade.",
+    "productInactive": "Produtos inativos nao podem ser pedidos.",
+    "variantInvalid": "Variante invalida para o produto selecionado.",
+    "optionInvalid": "Opcao invalida para o produto selecionado.",
+    "cancelledOrderUpdate": "Pedidos cancelados nao podem ser atualizados.",
+    "cancelledOrderStatus": "Pedidos cancelados nao podem ter o status alterado."
+  },
+  "tables": {
+    "notFound": "Mesa nao encontrada nesta unidade.",
+    "sessionAlreadyOpen": "Esta mesa ja possui uma sessao aberta.",
+    "reservationEndBeforeStart": "O horario de termino deve ser posterior ao inicio.",
+    "reservationConflict": "Esta mesa ja possui uma reserva conflitante neste periodo."
+  },
+  "products": {
+    "notFound": "Produto nao encontrado nesta unidade.",
+    "categoryNotFound": "Categoria nao encontrada nesta unidade."
+  },
+  "payments": {
+    "orderCancelled": "Pedidos cancelados nao podem receber pagamentos.",
+    "paymentExceedsRemaining": "O valor do pagamento excede o saldo restante do pedido.",
+    "paymentLoadError": "Erro ao carregar o pagamento apos a criacao."
+  },
+  "cashRegister": {
+    "notOpen": "Nenhum caixa aberto encontrado para esta unidade.",
+    "negativeClosing": "O valor de fechamento nao pode ser negativo."
+  },
+  "staff": {
+    "inactiveEmail": "Ja existe um usuario inativo com este e-mail. Reative a conta antes de vincular.",
+    "roleAlreadyExists": "Colaborador ja possui este perfil no contexto informado.",
+    "invitePendingExists": "Ja existe um convite pendente para este colaborador no contexto informado.",
+    "inviteNotFound": "Convite nao encontrado.",
+    "inviteNotPending": "Este convite nao esta pendente para aceite.",
+    "inviteExpired": "Convite expirado.",
+    "inviteInactiveEmail": "Ja existe um usuario inativo com este e-mail. Reative a conta antes de aceitar o convite.",
+    "inviteNewUserRequiresName": "O nome e obrigatorio para aceitar o convite de um novo colaborador.",
+    "notFound": "Colaborador nao encontrado neste tenant.",
+    "alreadyActive": "O colaborador ja esta ativo.",
+    "alreadyInactive": "O colaborador ja esta inativo.",
+    "selfDeactivationForbidden": "Voce nao pode desativar sua propria conta.",
+    "ownerStatusForbidden": "Somente um owner pode alterar o status de outro owner.",
+    "roleAssignmentForbidden": "Voce nao possui permissao para atribuir este perfil.",
+    "assignableRolesRequired": "Voce nao possui permissao para gerenciar colaboradores neste tenant."
+  },
+  "database": {
+    "uniqueConstraint": "Ja existe um registro com este valor unico.",
+    "foreignKey": "Operacao invalida: referencia a um registro inexistente.",
+    "recordNotFound": "Registro nao encontrado.",
+    "relationConstraint": "Nao e possivel realizar esta operacao pois existem registros relacionados.",
+    "internal": "Erro interno no banco de dados."
+  },
+  "message": "{{message}}"
+}

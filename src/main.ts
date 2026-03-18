@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { Messages } from './common/i18n/messages';
+import { AppI18nService } from './common/i18n/i18n.service';
 import type {
   CorsConfig,
   NestConfig,
@@ -21,16 +22,20 @@ function collectMessages(error: ValidationError): string[] {
   return [...current, ...nested];
 }
 
-function translateValidationMessage(message: string): string {
+function translateValidationMessage(
+  message: string,
+  appI18nService: AppI18nService,
+): string {
   if (!message.includes('.')) {
     return message;
   }
 
-  return Messages.translate(message);
+  return appI18nService.translate(message, { defaultValue: message });
 }
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const appI18nService = app.get(AppI18nService);
 
   // Validation
   app.useGlobalPipes(
@@ -41,7 +46,9 @@ async function bootstrap() {
       exceptionFactory: (errors: ValidationError[]) => {
         const messages = errors
           .flatMap((error) => collectMessages(error))
-          .map((message) => translateValidationMessage(message));
+          .map((message) =>
+            translateValidationMessage(message, appI18nService),
+          );
         return new BadRequestException({
           statusCode: 400,
           message: messages,
@@ -56,7 +63,7 @@ async function bootstrap() {
 
   // Exception Filters for unhandled exceptions
   const { httpAdapter } = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new HttpExceptionFilter(appI18nService));
   app.useGlobalFilters(new PrismaExceptionFilter(httpAdapter));
 
   const configService = app.get(ConfigService);
