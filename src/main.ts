@@ -2,7 +2,11 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {
+  DocumentBuilder,
+  SwaggerCustomOptions,
+  SwaggerModule,
+} from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -73,6 +77,11 @@ async function bootstrap() {
 
   // Swagger Api
   if (swaggerConfig.enabled) {
+    const swaggerPath = `/${(swaggerConfig.path || 'api').replace(
+      /^\/+|\/+$/g,
+      '',
+    )}`;
+
     const options = new DocumentBuilder()
       .setTitle(swaggerConfig.title || 'Nestjs')
       .setDescription(swaggerConfig.description || 'The nestjs API description')
@@ -84,8 +93,11 @@ async function bootstrap() {
       })
       .build();
     const document = SwaggerModule.createDocument(app, options);
+    const customSwaggerOptions: SwaggerCustomOptions = {
+      jsonDocumentUrl: `${swaggerPath}-json`,
+    };
 
-    SwaggerModule.setup(swaggerConfig.path || 'api', app, document);
+    SwaggerModule.setup(swaggerPath, app, document, customSwaggerOptions);
   }
 
   // Cors
