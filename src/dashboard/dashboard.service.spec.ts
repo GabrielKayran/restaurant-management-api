@@ -1,7 +1,11 @@
-import { OrderStatus, OrderType, Prisma } from '@prisma/client';
+import { OrderStatus, OrderType, PaymentMethod, Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RequestScope } from '../common/models/request-scope.model';
 import { DashboardDateRangeQuery } from './dto/dashboard-date-range.query';
+import {
+  PreparationTimeTrendGroupBy,
+  PreparationTimeTrendQuery,
+} from './dto/preparation-time-trend.query';
 import { RecentOrdersQuery } from './dto/recent-orders.query';
 import { TopProductsQuery } from './dto/top-products.query';
 import { DashboardService } from './dashboard.service';
@@ -12,10 +16,15 @@ describe('DashboardService', () => {
     order: {
       aggregate: jest.Mock;
       findMany: jest.Mock;
+      groupBy: jest.Mock;
+    };
+    payment: {
+      groupBy: jest.Mock;
     };
     orderItem: {
       groupBy: jest.Mock;
     };
+    $queryRaw: jest.Mock;
   };
 
   const scope: RequestScope = {
@@ -31,10 +40,15 @@ describe('DashboardService', () => {
       order: {
         aggregate: jest.fn(),
         findMany: jest.fn(),
+        groupBy: jest.fn(),
+      },
+      payment: {
+        groupBy: jest.fn(),
       },
       orderItem: {
         groupBy: jest.fn(),
       },
+      $queryRaw: jest.fn(),
     };
 
     service = new DashboardService(prisma as unknown as PrismaService);
@@ -210,6 +224,156 @@ describe('DashboardService', () => {
         quantitySold: 18,
         totalSales: 90,
       });
+    });
+  });
+
+  describe('getOrdersByStatus', () => {
+    it('returns empty array when no grouped rows exist', async () => {
+      prisma.order.groupBy.mockResolvedValue([]);
+
+      const result = await service.getOrdersByStatus(
+        scope,
+        {} as DashboardDateRangeQuery,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('maps grouped status rows to response format', async () => {
+      prisma.order.groupBy.mockResolvedValue([
+        {
+          status: OrderStatus.PENDING,
+          _count: { _all: 12 },
+        },
+        {
+          status: OrderStatus.PREPARING,
+          _count: { _all: 8 },
+        },
+      ]);
+
+      const result = await service.getOrdersByStatus(
+        scope,
+        {} as DashboardDateRangeQuery,
+      );
+
+      expect(result).toEqual([
+        { status: OrderStatus.PENDING, count: 12 },
+        { status: OrderStatus.PREPARING, count: 8 },
+      ]);
+    });
+  });
+
+  describe('getPaymentsByMethod', () => {
+    it('returns empty array when no paid transactions exist', async () => {
+      prisma.payment.groupBy.mockResolvedValue([]);
+
+      const result = await service.getPaymentsByMethod(
+        scope,
+        {} as DashboardDateRangeQuery,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('maps grouped payment rows to response format', async () => {
+      prisma.payment.groupBy.mockResolvedValue([
+        {
+          method: PaymentMethod.PIX,
+          _count: { _all: 40 },
+          _sum: { amount: new Prisma.Decimal('2450.50') },
+        },
+        {
+          method: PaymentMethod.CREDIT_CARD,
+          _count: { _all: 25 },
+          _sum: { amount: new Prisma.Decimal('1980.00') },
+        },
+      ]);
+
+      const result = await service.getPaymentsByMethod(
+        scope,
+        {} as DashboardDateRangeQuery,
+      );
+
+      expect(result).toEqual([
+        { method: PaymentMethod.PIX, count: 40, totalAmount: 2450.5 },
+        {
+          method: PaymentMethod.CREDIT_CARD,
+          count: 25,
+          totalAmount: 1980,
+        },
+      ]);
+    });
+  });
+
+  describe('getSalesByHour', () => {
+    it('returns empty array when there are no sales', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.getSalesByHour(
+        scope,
+        {} as DashboardDateRangeQuery,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('maps sql rows to hourly sales response format', async () => {
+      prisma.$queryRaw.mockResolvedValue([
+        {
+          hour: 10,
+          sales: new Prisma.Decimal('320.00'),
+          orders: 6,
+        },
+        {
+          hour: 11,
+          sales: '540.00',
+          orders: '10',
+        },
+      ]);
+
+      const result = await service.getSalesByHour(
+        scope,
+        {} as DashboardDateRangeQuery,
+      );
+
+      expect(result).toEqual([
+        { hour: 10, sales: 320, orders: 6 },
+        { hour: 11, sales: 540, orders: 10 },
+      ]);
+    });
+  });
+
+  describe('getPreparationTimeTrend', () => {
+    it('returns empty array when no valid preparation records exist', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.getPreparationTimeTrend(scope, {
+        groupBy: PreparationTimeTrendGroupBy.DAY,
+      } as PreparationTimeTrendQuery);
+
+      expect(result).toEqual([]);
+    });
+
+    it('maps grouped preparation trend rows for day buckets', async () => {
+      prisma.$queryRaw.mockResolvedValue([
+        {
+          bucket: '2026-03-19',
+          averageMinutes: new Prisma.Decimal('18.40'),
+          p90Minutes: '29.00',
+        },
+      ]);
+
+      const result = await service.getPreparationTimeTrend(scope, {
+        groupBy: PreparationTimeTrendGroupBy.DAY,
+      } as PreparationTimeTrendQuery);
+
+      expect(result).toEqual([
+        {
+          bucket: '2026-03-19',
+          averageMinutes: 18.4,
+          p90Minutes: 29,
+        },
+      ]);
     });
   });
 

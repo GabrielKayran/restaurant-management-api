@@ -15,8 +15,13 @@ import { RequestScope } from '../common/models/request-scope.model';
 import { DashboardService } from './dashboard.service';
 import { DashboardDateRangeQuery } from './dto/dashboard-date-range.query';
 import { DashboardSummaryResponseDto } from './dto/dashboard-summary.response';
+import { OrdersByStatusResponseDto } from './dto/orders-by-status.response';
+import { PreparationTimeTrendQuery } from './dto/preparation-time-trend.query';
+import { PreparationTimeTrendResponseDto } from './dto/preparation-time-trend.response';
+import { PaymentsByMethodResponseDto } from './dto/payments-by-method.response';
 import { RecentOrderResponseDto } from './dto/recent-order.response';
 import { RecentOrdersQuery } from './dto/recent-orders.query';
+import { SalesByHourResponseDto } from './dto/sales-by-hour.response';
 import { SalesOverviewItemResponseDto } from './dto/sales-overview-item.response';
 import { TopProductResponseDto } from './dto/top-product.response';
 import { TopProductsQuery } from './dto/top-products.query';
@@ -92,6 +97,94 @@ export class DashboardController {
     @Query() query: DashboardDateRangeQuery,
   ): Promise<SalesOverviewItemResponseDto[]> {
     return this.dashboardService.getSalesOverview(scope, query);
+  }
+
+  @Get('orders-by-status')
+  @ApiOperation({
+    summary: 'Get order distribution by status',
+    description:
+      'Returns the number of orders grouped by status for the selected date range.',
+  })
+  @ApiOkResponse({
+    description: 'Order status distribution generated successfully.',
+    type: OrdersByStatusResponseDto,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User has no access to the selected unit scope.',
+  })
+  getOrdersByStatus(
+    @CurrentScope() scope: RequestScope,
+    @Query() query: DashboardDateRangeQuery,
+  ): Promise<OrdersByStatusResponseDto[]> {
+    return this.dashboardService.getOrdersByStatus(scope, query);
+  }
+
+  @Get('payments-by-method')
+  @ApiOperation({
+    summary: 'Get payments distribution by method',
+    description:
+      'Returns paid transactions grouped by payment method, including count and total amount, for the selected date range.',
+  })
+  @ApiOkResponse({
+    description: 'Payments by method generated successfully.',
+    type: PaymentsByMethodResponseDto,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User has no access to the selected unit scope.',
+  })
+  getPaymentsByMethod(
+    @CurrentScope() scope: RequestScope,
+    @Query() query: DashboardDateRangeQuery,
+  ): Promise<PaymentsByMethodResponseDto[]> {
+    return this.dashboardService.getPaymentsByMethod(scope, query);
+  }
+
+  @Get('sales-by-hour')
+  @ApiOperation({
+    summary: 'Get sales grouped by hour',
+    description:
+      'Returns hourly sales and order count for the selected date range. Cancelled orders are excluded.',
+  })
+  @ApiOkResponse({
+    description: 'Sales by hour generated successfully.',
+    type: SalesByHourResponseDto,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User has no access to the selected unit scope.',
+  })
+  getSalesByHour(
+    @CurrentScope() scope: RequestScope,
+    @Query() query: DashboardDateRangeQuery,
+  ): Promise<SalesByHourResponseDto[]> {
+    return this.dashboardService.getSalesByHour(scope, query);
+  }
+
+  @Get('preparation-time-trend')
+  @ApiOperation({
+    summary: 'Get preparation time trend',
+    description:
+      'Returns average and p90 preparation time in minutes grouped by day or hour for the selected date range.',
+  })
+  @ApiOkResponse({
+    description: 'Preparation time trend generated successfully.',
+    type: PreparationTimeTrendResponseDto,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User has no access to the selected unit scope.',
+  })
+  getPreparationTimeTrend(
+    @CurrentScope() scope: RequestScope,
+    @Query() query: PreparationTimeTrendQuery,
+  ): Promise<PreparationTimeTrendResponseDto[]> {
+    return this.dashboardService.getPreparationTimeTrend(scope, query);
   }
 
   @Get('top-products')
