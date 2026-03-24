@@ -32,10 +32,13 @@ export class CreateStaffInviteInput {
 
   @ApiProperty({
     example: 'uuid-da-unidade',
-    description: 'Unidade onde o colaborador sera vinculado',
+    description:
+      'Unidade onde o colaborador sera vinculado. Opcional quando o tenant possui somente uma unidade ativa.',
+    required: false,
   })
+  @IsOptional()
   @IsUUID('4', { message: 'validation.staff.unitIdInvalid' })
-  unitId: string;
+  unitId?: string;
 
   @ApiProperty({
     example: 72,

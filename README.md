@@ -1,246 +1,95 @@
-# 🍽️ Restaurant Management API
+# Restaurant Management API
 
-API REST para gestão de restaurantes, desenvolvida com **NestJS**, **Prisma** e **PostgreSQL**.
+API REST para gestao de restaurante com NestJS, Prisma e PostgreSQL.
 
-O projeto já possui a base de autenticação multi-tenant funcionando e um **schema Prisma completo** para operação de restaurante, incluindo catálogo, mesas, pedidos, delivery, estoque, receitas, pagamentos e caixa.
+Estado atual do projeto:
+- onboarding e autenticacao com JWT
+- operacao single-unit first sem remover multiunidade do schema
+- equipe, catalogo, clientes, mesas, pedidos, pagamentos, caixa e dashboard
+- schema pronto para evolucao futura de delivery, estoque e integracoes
 
-> Status atual: a API expõe endpoints de onboarding/autenticação e health check. Os demais módulos do domínio já estão modelados no banco e prontos para evolução na camada HTTP.
+## Stack
 
----
+- Node.js 18+
+- NestJS 10
+- TypeScript
+- Prisma ORM
+- PostgreSQL 15
+- Swagger / OpenAPI
 
-## ✅ Visão geral
+## Foco do MVP atual
 
-Este repositório foi reorganizado para ser a base de um sistema de restaurante com foco em:
+O sistema esta sendo conduzido para um MVP vendavel de restaurante/hamburgueria com:
+- uma unidade principal
+- resolucao automatica de unidade quando o usuario possui acesso a somente uma unidade ativa
+- catalogo com categorias, variantes, opcionais e precos agendados
+- operacao de salao, balcao e retirada
+- caixa com abertura e fechamento
+- dashboard operacional
 
-- **multi-tenant** por grupo/restaurante
-- **multiunidade** por loja/filial
-- **autenticação JWT** com access token e refresh token
-- **onboarding de tenant + unidade inicial**
-- **modelagem pronta** para operação de salão, balcão e delivery
-- **documentação Swagger**
-- **integração com PostgreSQL via Prisma**
+## Modulos HTTP disponiveis
 
----
+- `GET /health`
+- `POST /auth/signup`
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `GET /auth/me`
+- `POST /staff`
+- `POST /staff/invite`
+- `POST /staff/accept-invite`
+- `GET /staff`
+- `PATCH /staff/:userId/status`
+- `GET /products`
+- `GET /products/:id`
+- `POST /products`
+- `PATCH /products/:id`
+- `DELETE /products/:id`
+- `GET /products/categories`
+- `GET /products/categories/:id`
+- `POST /products/categories`
+- `PATCH /products/categories/:id`
+- `DELETE /products/categories/:id`
+- `GET /products/categories/summary`
+- `GET /customers`
+- `GET /customers/:id`
+- `POST /customers`
+- `PATCH /customers/:id`
+- `GET /tables`
+- `GET /tables/summary`
+- `GET /tables/:id`
+- `POST /tables/:id/open-session`
+- `POST /tables/:id/open-order`
+- `POST /tables/:id/reserve`
+- `GET /orders`
+- `GET /orders/:id`
+- `POST /orders`
+- `PATCH /orders/:id`
+- `PATCH /orders/:id/status`
+- `POST /orders/:id/cancel`
+- `GET /payments`
+- `POST /payments`
+- `POST /cash-register/open`
+- `GET /cash-register/summary`
+- `GET /cash-register/payment-methods-summary`
+- `GET /cash-register/transactions`
+- `POST /cash-register/close`
+- `GET /dashboard/summary`
+- `GET /dashboard/sales-overview`
+- `GET /dashboard/orders-by-status`
+- `GET /dashboard/payments-by-method`
+- `GET /dashboard/sales-by-hour`
+- `GET /dashboard/preparation-time-trend`
+- `GET /dashboard/top-products`
+- `GET /dashboard/recent-orders`
 
-## 🚀 Stack
+## Regras importantes de escopo
 
-- **Node.js 18+**
-- **NestJS 10**
-- **TypeScript**
-- **Prisma ORM**
-- **PostgreSQL 15**
-- **JWT**
-- **Swagger / OpenAPI**
-- **Docker Compose**
+- Rotas operacionais usam JWT.
+- O header `x-unit-id` continua suportado.
+- Quando o usuario possui acesso a somente uma unidade ativa, o backend resolve a unidade automaticamente.
+- Quando o usuario possui mais de uma unidade ativa, a selecao explicita de unidade continua obrigatoria.
 
----
-
-## 🧩 Domínio modelado no banco
-
-O arquivo `prisma/schema.prisma` já cobre as principais entidades de um sistema de gestão de restaurante:
-
-### Estrutura organizacional
-- `Tenant`
-- `RestaurantUnit`
-- `User`
-- `UserTenantRole`
-- `UserUnitRole`
-
-### Catálogo e cardápio
-- `Category`
-- `Product`
-- `ProductVariant`
-- `ProductOptionGroup`
-- `ProductOption`
-- `ProductPrice`
-
-### Atendimento e pedidos
-- `Customer`
-- `Address`
-- `RestaurantTable`
-- `TableSession`
-- `Order`
-- `OrderItem`
-- `OrderItemOption`
-- `OrderStatusHistory`
-- `Courier`
-- `DeliveryZone`
-- `DeliveryFeeRule`
-- `Payment`
-
-### Estoque e produção
-- `Ingredient`
-- `StockItem`
-- `StockMovement`
-- `Recipe`
-- `RecipeItem`
-- `Supplier`
-
-### Financeiro
-- `CashRegister`
-- `CashMovement`
-- `Expense`
-
-Também já existem enums para perfis de acesso, tipo/status do pedido, status de pagamento, movimentações de estoque e caixa.
-
----
-
-## 📌 Funcionalidades já implementadas
-
-### 🔐 Autenticação e onboarding
-- cadastro do usuário proprietário (`OWNER`)
-- criação automática do `Tenant`
-- criação automática da primeira `RestaurantUnit`
-- associação de papéis do usuário no tenant e na unidade
-- login com JWT
-- refresh token
-- endpoint autenticado para consultar o usuário atual
-
-### ❤️ Observabilidade básica
-- endpoint `GET /health`
-- Swagger habilitado em `/api`
-- validação global com `ValidationPipe`
-- filtro global para exceções do Prisma
-- CORS habilitado
-
----
-
-## 🛣️ Roadmap natural do projeto
-
-Com base no schema atual, a evolução esperada da API inclui módulos como:
-
-- gestão de categorias e produtos
-- configuração de variantes e opcionais
-- cadastro de clientes e endereços
-- gestão de mesas e sessões de mesa
-- criação e acompanhamento de pedidos
-- fluxo de delivery e entregadores
-- controle de estoque e fichas técnicas
-- pagamentos, caixa e despesas
-- permissões por tenant e unidade
-
----
-
-## 📂 Estrutura atual do projeto
-
-```text
-src/
-├── auth/
-│   ├── auth.controller.ts
-│   ├── auth.module.ts
-│   ├── auth.service.ts
-│   ├── jwt.strategy.ts
-│   ├── password.service.ts
-│   ├── decorators/
-│   ├── dto/
-│   ├── guards/
-│   └── models/
-├── common/
-│   ├── configs/
-│   ├── filters/
-│   └── pagination/
-├── app.controller.ts
-├── app.module.ts
-├── main.ts
-└── metadata.ts
-
-prisma/
-├── schema.prisma
-├── seed.ts
-└── migrations/
-```
-
----
-
-## ⚙️ Como rodar localmente
-
-### 1. Clonar o repositório
-
-```bash
-git clone https://github.com/GabrielKayran/restaurant-management-api
-cd restaurant-management-api
-```
-
-### 2. Instalar dependências
-
-```bash
-npm install
-```
-
-### 3. Criar o arquivo `.env`
-
-Exemplo mínimo:
-
-```env
-POSTGRES_USER=prisma
-POSTGRES_PASSWORD=prisma
-POSTGRES_DB=restaurant_management
-
-DATABASE_URL=postgresql://prisma:prisma@localhost:5432/restaurant_management?schema=public
-
-JWT_ACCESS_SECRET=dev_access_secret
-JWT_REFRESH_SECRET=dev_refresh_secret
-
-JWT_ACCESS_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
-
-PORT=3000
-```
-
-### 4. Subir o banco com Docker Compose
-
-```bash
-docker compose -f docker-compose.db.yml up -d
-```
-
-### 5. Aplicar o schema e popular dados iniciais
-
-```bash
-npx prisma db push
-npm run seed
-```
-
-### 6. Iniciar a API
-
-```bash
-npm run start:dev
-```
-
----
-
-## 📚 Swagger
-
-Com a aplicação rodando, acesse:
-
-- `http://localhost:3000/api`
-
-Para testar rotas protegidas:
-
-1. faça login em `POST /auth/login`
-2. copie o `accessToken`
-3. clique em **Authorize**
-4. informe o token como `Bearer SEU_TOKEN`
-
----
-
-## 📡 Endpoints disponíveis hoje
-
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| `GET` | `/health` | Health check da aplicação |
-| `POST` | `/auth/signup` | Cria usuário owner + tenant + unidade inicial |
-| `POST` | `/auth/login` | Autentica usuário e retorna `accessToken` e `refreshToken` |
-| `POST` | `/auth/refresh` | Gera novo par de tokens a partir do refresh token |
-| `GET` | `/auth/me` | Retorna o usuário autenticado |
-| `POST` | `/staff` | Cadastra colaborador interno (OWNER/MANAGER) |
-| `POST` | `/staff/invite` | Gera convite para colaborador (OWNER/MANAGER) |
-| `POST` | `/staff/accept-invite` | Aceita convite e ativa vínculo do colaborador |
-| `GET` | `/staff` | Lista colaboradores do tenant atual |
-| `PATCH` | `/staff/:userId/status` | Ativa/desativa colaborador do tenant |
-
----
-
-## 🧪 Exemplos de payload
+## Exemplos de payload
 
 ### `POST /auth/signup`
 
@@ -255,101 +104,116 @@ Para testar rotas protegidas:
 }
 ```
 
-### `POST /auth/login`
+### `POST /products`
 
 ```json
 {
-  "email": "joao@restaurante.com",
-  "password": "123456"
+  "name": "Burger Bacon",
+  "categoryId": "uuid-da-categoria",
+  "description": "Blend 180g com queijo e bacon",
+  "basePrice": 29.9,
+  "costPrice": 13.5,
+  "variants": [
+    {
+      "name": "Duplo",
+      "priceDelta": 8,
+      "isDefault": true
+    }
+  ],
+  "optionGroups": [
+    {
+      "name": "Adicionais",
+      "minSelect": 0,
+      "maxSelect": 3,
+      "options": [
+        {
+          "name": "Bacon extra",
+          "priceDelta": 4
+        }
+      ]
+    }
+  ],
+  "prices": [
+    {
+      "name": "Promocao almoco",
+      "price": 27.9,
+      "startsAt": "2026-03-23T11:00:00.000Z",
+      "endsAt": "2026-03-23T15:00:00.000Z"
+    }
+  ]
 }
 ```
 
-### `POST /auth/refresh`
+### `POST /customers`
 
 ```json
 {
-  "refreshToken": "SEU_REFRESH_TOKEN"
+  "name": "Maria Oliveira",
+  "phone": "34999998888",
+  "email": "maria@email.com",
+  "address": {
+    "street": "Rua Afonso Pena",
+    "number": "123",
+    "city": "Uberlandia",
+    "state": "MG",
+    "zipCode": "38400100"
+  }
 }
 ```
 
-### `POST /staff/invite`
+### `POST /cash-register/open`
 
 ```json
 {
-  "email": "atendente@restaurante.com",
-  "role": "ATTENDANT",
-  "unitId": "uuid-da-unidade",
-  "expiresInHours": 72
+  "openingFloat": 150
 }
 ```
 
-### `POST /staff/accept-invite`
+## Como rodar
 
-```json
-{
-  "token": "TOKEN_DE_CONVITE",
-  "password": "123456",
-  "name": "Carlos Lima"
-}
+1. Instale as dependencias:
+
+```bash
+npm install
 ```
 
----
+2. Configure o `.env`:
 
-## 🌱 Seed disponível
-
-O arquivo `prisma/seed.ts` cria uma base inicial com:
-
-- tenant `Grupo Sabor Mineiro`
-- unidades `Loja Centro` e `Loja Shopping`
-- categorias `Burgers` e `Bebidas`
-- produtos com variantes e opcionais
-- cliente com endereço
-- mesa e sessão de mesa
-- pedido com item, histórico e pagamento
-
-Usuários criados no seed:
-
-- `ana@sabormineiro.com`
-- `carlos@sabormineiro.com`
-
-Senha padrão:
-
-```text
-123456
+```env
+DATABASE_URL=postgresql://prisma:prisma@localhost:5432/restaurant_management?schema=public
+JWT_ACCESS_SECRET=dev_access_secret
+JWT_REFRESH_SECRET=dev_refresh_secret
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+PORT=3000
 ```
 
----
+3. Suba o banco:
 
-## 🔐 Segurança e boas práticas já presentes
+```bash
+docker compose -f docker-compose.db.yml up -d
+```
 
-- hash de senha com `bcrypt`
-- autenticação JWT com refresh token
-- validação de DTOs com `class-validator`
-- guards para rotas protegidas
-- tratamento global de exceções do Prisma
-- configuração centralizada
-- separação entre controller, service e DTOs
-- tipagem forte com TypeScript + Prisma Client
+4. Aplique schema e seed:
 
----
+```bash
+npx prisma db push
+npm run seed
+```
 
-## 🛠️ Scripts úteis
+5. Inicie a API:
 
 ```bash
 npm run start:dev
-npm run build
-npm run prisma:generate
-npm run prisma:studio
-npm run seed
-npm run docker:db
-npm run docker
 ```
 
----
+## Swagger
 
-## 📎 Observações
+Com a aplicacao rodando:
+- `http://localhost:3000/api`
 
-- A documentação agora descreve corretamente o projeto como **sistema de restaurante**.
-- O schema Prisma já representa uma operação realista de restaurante, mesmo que nem todos os módulos HTTP estejam implementados ainda.
-- Os metadados exibidos no Swagger ainda podem estar genéricos internamente e podem ser refinados depois sem impactar a estrutura principal da API.
-- Regras para geração de código por IA (Copilot): `.github/copilot-instructions.md`.
+## Testes
+
+```bash
+npx jest --runInBand
+```

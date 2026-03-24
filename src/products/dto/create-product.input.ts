@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsNumber,
   IsOptional,
@@ -9,6 +10,9 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { CreateProductOptionGroupInput } from './product-option-group.input';
+import { CreateProductPriceInput } from './product-price.input';
+import { CreateProductVariantInput } from './product-variant.input';
 
 export class CreateProductInput {
   @ApiProperty()
@@ -65,4 +69,22 @@ export class CreateProductInput {
   @Type(() => Boolean)
   @IsBoolean({ message: 'validation.products.isActiveBoolean' })
   isActive: boolean;
+
+  @ApiPropertyOptional({ type: [CreateProductVariantInput] })
+  @IsOptional()
+  @IsArray({ message: 'As variantes devem ser uma lista.' })
+  @Type(() => CreateProductVariantInput)
+  variants?: CreateProductVariantInput[];
+
+  @ApiPropertyOptional({ type: [CreateProductOptionGroupInput] })
+  @IsOptional()
+  @IsArray({ message: 'Os grupos de adicionais devem ser uma lista.' })
+  @Type(() => CreateProductOptionGroupInput)
+  optionGroups?: CreateProductOptionGroupInput[];
+
+  @ApiPropertyOptional({ type: [CreateProductPriceInput] })
+  @IsOptional()
+  @IsArray({ message: 'Os precos agendados devem ser uma lista.' })
+  @Type(() => CreateProductPriceInput)
+  prices?: CreateProductPriceInput[];
 }

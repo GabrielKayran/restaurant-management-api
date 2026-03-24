@@ -14,11 +14,52 @@ import { CloseCashRegisterInput } from './dto/close-cash-register.input';
 import { CashRegisterSummaryResponseDto } from './dto/cash-register-summary.response';
 import { CashRegisterTransactionsQueryDto } from './dto/cash-register-transactions.query';
 import { CashTransactionResponseDto } from './dto/cash-transaction.response';
+import { OpenCashRegisterInput } from './dto/open-cash-register.input';
 import { PaymentMethodSummaryResponseDto } from './dto/payment-method-summary.response';
 
 @Injectable()
 export class CashRegisterService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async open(
+    scope: RequestScope,
+    input: OpenCashRegisterInput,
+  ): Promise<{ registerId: string; openingFloat: number }> {
+    const existingRegister = await this.prisma.cashRegister.findFirst({
+      where: {
+        unitId: scope.unitId,
+        status: CashRegisterStatus.OPEN,
+      },
+      select: {
+        id: true,
+      },
+      orderBy: {
+        openedAt: 'desc',
+      },
+    });
+
+    if (existingRegister) {
+      throw new BadRequestException(Messages.CASH_REGISTER_ALREADY_OPEN);
+    }
+
+    const openingFloat = Number((input.openingFloat ?? 0).toFixed(2));
+    const register = await this.prisma.cashRegister.create({
+      data: {
+        unitId: scope.unitId,
+        openedById: scope.userId,
+        openingFloat: new Prisma.Decimal(openingFloat.toFixed(2)),
+        status: CashRegisterStatus.OPEN,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return {
+      registerId: register.id,
+      openingFloat,
+    };
+  }
 
   async getSummary(
     scope: RequestScope,

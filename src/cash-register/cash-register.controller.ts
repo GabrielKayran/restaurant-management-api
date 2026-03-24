@@ -19,6 +19,7 @@ import { CloseCashRegisterInput } from './dto/close-cash-register.input';
 import { CashRegisterSummaryResponseDto } from './dto/cash-register-summary.response';
 import { CashRegisterTransactionsQueryDto } from './dto/cash-register-transactions.query';
 import { CashTransactionResponseDto } from './dto/cash-transaction.response';
+import { OpenCashRegisterInput } from './dto/open-cash-register.input';
 import { PaymentMethodSummaryResponseDto } from './dto/payment-method-summary.response';
 
 @ApiTags('Cash Register')
@@ -28,6 +29,32 @@ import { PaymentMethodSummaryResponseDto } from './dto/payment-method-summary.re
 @Controller('cash-register')
 export class CashRegisterController {
   constructor(private readonly cashRegisterService: CashRegisterService) {}
+
+  @Post('open')
+  @ApiOperation({
+    summary: 'Open cash register',
+    description:
+      'Opens a new cash register for the selected unit when no other register is currently open.',
+  })
+  @ApiCreatedResponse({
+    description: 'Cash register opened successfully.',
+    schema: {
+      example: {
+        registerId: '8ec50786-b086-4b67-9f8b-7837523f6969',
+        openingFloat: 150,
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required.' })
+  @ApiForbiddenResponse({
+    description: 'User has no access to the selected unit scope.',
+  })
+  open(
+    @CurrentScope() scope: RequestScope,
+    @Body() input: OpenCashRegisterInput,
+  ): Promise<{ registerId: string; openingFloat: number }> {
+    return this.cashRegisterService.open(scope, input);
+  }
 
   @Get('summary')
   @ApiOperation({

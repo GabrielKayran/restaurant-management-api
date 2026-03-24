@@ -9,6 +9,7 @@ const MESSAGE_KEYS = {
   TENANT_CONTEXT_REQUIRED: 'errors.auth.tenantContextRequired',
   TENANT_CONTEXT_MISSING: 'errors.auth.tenantContextMissing',
   UNIT_HEADER_REQUIRED: 'errors.scope.unitHeaderRequired',
+  UNIT_SELECTION_REQUIRED: 'errors.scope.unitSelectionRequired',
   UNIT_ACCESS_DENIED: 'errors.scope.unitAccessDenied',
   UNIT_NOT_IN_TENANT: 'errors.scope.unitNotInTenant',
   NO_PERMISSION: 'errors.auth.noPermission',
@@ -33,6 +34,7 @@ const MESSAGE_KEYS = {
   PAYMENT_EXCEEDS_REMAINING: 'errors.payments.paymentExceedsRemaining',
   PAYMENT_LOAD_ERROR: 'errors.payments.paymentLoadError',
   CASH_REGISTER_NOT_OPEN: 'errors.cashRegister.notOpen',
+  CASH_REGISTER_ALREADY_OPEN: 'errors.cashRegister.alreadyOpen',
   CASH_REGISTER_NEGATIVE_CLOSING: 'errors.cashRegister.negativeClosing',
   STAFF_INACTIVE_EMAIL: 'errors.staff.inactiveEmail',
   STAFF_ROLE_ALREADY_EXISTS: 'errors.staff.roleAlreadyExists',
@@ -74,6 +76,7 @@ const PT_BR_FALLBACK: Record<MessageKey, string> = {
     'Contexto de tenant ausente. Realize o login novamente.',
   'errors.scope.unitHeaderRequired':
     'O cabecalho x-unit-id e obrigatorio e deve ser um UUID valido.',
+  'errors.scope.unitSelectionRequired': 'Selecione uma unidade para continuar.',
   'errors.scope.unitAccessDenied':
     'Voce nao tem acesso a unidade solicitada neste tenant.',
   'errors.scope.unitNotInTenant':
@@ -111,6 +114,8 @@ const PT_BR_FALLBACK: Record<MessageKey, string> = {
     'Erro ao carregar o pagamento apos a criacao.',
   'errors.cashRegister.notOpen':
     'Nenhum caixa aberto encontrado para esta unidade.',
+  'errors.cashRegister.alreadyOpen':
+    'Ja existe um caixa aberto para esta unidade.',
   'errors.cashRegister.negativeClosing':
     'O valor de fechamento nao pode ser negativo.',
   'errors.staff.inactiveEmail':
@@ -281,6 +286,10 @@ export class Messages {
     return translate(MESSAGE_KEYS.CASH_REGISTER_NOT_OPEN);
   }
 
+  static get CASH_REGISTER_ALREADY_OPEN(): string {
+    return translate(MESSAGE_KEYS.CASH_REGISTER_ALREADY_OPEN);
+  }
+
   static get CASH_REGISTER_NEGATIVE_CLOSING(): string {
     return translate(MESSAGE_KEYS.CASH_REGISTER_NEGATIVE_CLOSING);
   }
@@ -351,6 +360,10 @@ export class Messages {
 
   static get UNIT_NOT_IN_TENANT(): string {
     return translate(MESSAGE_KEYS.UNIT_NOT_IN_TENANT);
+  }
+
+  static get UNIT_SELECTION_REQUIRED(): string {
+    return translate(MESSAGE_KEYS.UNIT_SELECTION_REQUIRED);
   }
 
   static get DB_UNIQUE_CONSTRAINT(): string {

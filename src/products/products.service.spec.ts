@@ -20,8 +20,20 @@ describe('ProductsService', () => {
     category: {
       findFirst: jest.Mock;
       findMany: jest.Mock;
+      create: jest.Mock;
+      update: jest.Mock;
+      delete: jest.Mock;
     };
     orderItem: { count: jest.Mock };
+    productVariant: { deleteMany: jest.Mock; createMany: jest.Mock };
+    productOptionGroup: {
+      findMany: jest.Mock;
+      deleteMany: jest.Mock;
+      create: jest.Mock;
+    };
+    productOption: { deleteMany: jest.Mock };
+    productPrice: { deleteMany: jest.Mock; createMany: jest.Mock };
+    $transaction: jest.Mock;
   };
 
   const scope: RequestScope = {
@@ -37,6 +49,13 @@ describe('ProductsService', () => {
       isActive: boolean;
       categoryId: string | null;
       costPrice: Prisma.Decimal | null;
+      prices: Array<{
+        id: string;
+        name: string;
+        price: Prisma.Decimal;
+        startsAt: Date | null;
+        endsAt: Date | null;
+      }>;
     }> = {},
   ) => ({
     id: overrides.id ?? 'product-1',
@@ -46,11 +65,14 @@ describe('ProductsService', () => {
     sku: null,
     basePrice: new Prisma.Decimal('25.00'),
     costPrice: overrides.costPrice ?? null,
+    prices: overrides.prices ?? [],
     imageUrl: null,
     isActive: overrides.isActive ?? true,
     createdAt: new Date(),
     updatedAt: new Date(),
     category: overrides.categoryId ? { name: 'Burgers' } : null,
+    variants: [],
+    optionGroups: [],
   });
 
   beforeEach(() => {
@@ -66,10 +88,30 @@ describe('ProductsService', () => {
       category: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
       },
       orderItem: {
         count: jest.fn(),
       },
+      productVariant: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+      },
+      productOptionGroup: {
+        findMany: jest.fn(),
+        deleteMany: jest.fn(),
+        create: jest.fn(),
+      },
+      productOption: {
+        deleteMany: jest.fn(),
+      },
+      productPrice: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+      },
+      $transaction: jest.fn(),
     };
 
     service = new ProductsService(prisma as unknown as PrismaService);
@@ -138,6 +180,41 @@ describe('ProductsService', () => {
       } as CreateProductInput);
 
       expect(result.id).toBe('product-new');
+    });
+
+    it('creates product with variants, option groups and scheduled prices', async () => {
+      prisma.product.create.mockResolvedValue({ id: 'product-rich' });
+      prisma.product.findFirst.mockResolvedValue(
+        mockProductRow({
+          id: 'product-rich',
+          prices: [
+            {
+              id: 'price-1',
+              name: 'Promocao',
+              price: new Prisma.Decimal('22.00'),
+              startsAt: null,
+              endsAt: null,
+            },
+          ],
+        }),
+      );
+
+      const result = await service.create(scope, {
+        name: 'Burger',
+        basePrice: 25.9,
+        isActive: true,
+        variants: [{ name: 'Duplo', priceDelta: 8, isDefault: true }],
+        optionGroups: [
+          {
+            name: 'Adicionais',
+            options: [{ name: 'Bacon', priceDelta: 4 }],
+          },
+        ],
+        prices: [{ name: 'Promocao', price: 22 }],
+      } as CreateProductInput);
+
+      expect(result.id).toBe('product-rich');
+      expect(prisma.product.create).toHaveBeenCalled();
     });
 
     it('creates product without category when categoryId is not provided', async () => {
@@ -209,6 +286,16 @@ describe('ProductsService', () => {
     it('hard deletes product when no order items reference it', async () => {
       prisma.product.findFirst.mockResolvedValue(mockProductRow());
       prisma.orderItem.count.mockResolvedValue(0);
+      prisma.productOptionGroup.findMany.mockResolvedValue([]);
+      prisma.$transaction.mockImplementation(async (callback) =>
+        callback({
+          productOptionGroup: prisma.productOptionGroup,
+          productOption: prisma.productOption,
+          productPrice: prisma.productPrice,
+          productVariant: prisma.productVariant,
+          product: prisma.product,
+        }),
+      );
       prisma.product.delete.mockResolvedValue({});
 
       const result = await service.remove(scope, 'product-1');
@@ -217,6 +304,27 @@ describe('ProductsService', () => {
       expect(prisma.product.delete).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'product-1' } }),
       );
+    });
+  });
+
+  describe('categories', () => {
+    it('lists categories ordered with product counters', async () => {
+      prisma.category.findMany.mockResolvedValue([
+        {
+          id: 'category-1',
+          name: 'Hamburgueres',
+          sortOrder: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          _count: { products: 2 },
+          products: [{ id: 'product-1' }],
+        },
+      ]);
+
+      const result = await service.listCategories(scope);
+
+      expect(result[0].productsCount).toBe(2);
+      expect(result[0].activeProductsCount).toBe(1);
     });
   });
 });

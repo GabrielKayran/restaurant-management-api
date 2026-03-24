@@ -14,7 +14,7 @@ import { StaffService } from './staff.service';
 describe('StaffService', () => {
   let service: StaffService;
   let prisma: {
-    restaurantUnit: { findFirst: jest.Mock };
+    restaurantUnit: { findFirst: jest.Mock; findMany: jest.Mock };
     userTenantRole: { findMany: jest.Mock };
     staffInvite: {
       findFirst: jest.Mock;
@@ -36,7 +36,7 @@ describe('StaffService', () => {
 
   beforeEach(() => {
     prisma = {
-      restaurantUnit: { findFirst: jest.fn() },
+      restaurantUnit: { findFirst: jest.fn(), findMany: jest.fn() },
       userTenantRole: { findMany: jest.fn() },
       staffInvite: {
         findFirst: jest.fn(),
@@ -89,6 +89,53 @@ describe('StaffService', () => {
         unitId: 'unit-1',
       }),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('resolves the single active unit automatically when unitId is omitted', async () => {
+    prisma.restaurantUnit.findMany.mockResolvedValue([{ id: 'unit-1' }]);
+    prisma.userTenantRole.findMany.mockResolvedValue([
+      { role: UserRole.OWNER },
+    ]);
+    prisma.$transaction.mockImplementation(async (callback) =>
+      callback({
+        user: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({
+            id: 'user-2',
+            name: 'Staff Member',
+            email: 'atendente@restaurante.com',
+          }),
+        },
+        userTenantRole: { upsert: jest.fn() },
+        userUnitRole: { upsert: jest.fn() },
+      }),
+    );
+    passwordService.hashPassword.mockResolvedValue('hashed-password');
+
+    const result = await service.createStaff(creator, {
+      name: 'Staff Member',
+      email: 'atendente@restaurante.com',
+      password: '123456',
+      role: UserRole.ATTENDANT,
+    });
+
+    expect(result.unitId).toBe('unit-1');
+  });
+
+  it('requires explicit unit selection when more than one unit is active', async () => {
+    prisma.restaurantUnit.findMany.mockResolvedValue([
+      { id: 'unit-1' },
+      { id: 'unit-2' },
+    ]);
+
+    await expect(
+      service.createStaff(creator, {
+        name: 'Staff Member',
+        email: 'atendente@restaurante.com',
+        password: '123456',
+        role: UserRole.ATTENDANT,
+      }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('does not allow manager to assign manager role', async () => {

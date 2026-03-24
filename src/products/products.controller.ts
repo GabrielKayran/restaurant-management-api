@@ -27,11 +27,14 @@ import { CurrentScope } from '../common/decorators/current-scope.decorator';
 import { UnitScopeGuard } from '../common/guards/unit-scope.guard';
 import { RequestScope } from '../common/models/request-scope.model';
 import { PaginationResponse } from '../common/pagination';
+import { CategoryDetailsResponseDto } from './dto/category-details.response';
 import { ProductCategorySummaryResponseDto } from './dto/category-summary.response';
+import { CreateCategoryInput } from './dto/create-category.input';
 import { CreateProductInput } from './dto/create-product.input';
 import { ProductDetailsResponseDto } from './dto/product-details.response';
 import { ProductListItemResponseDto } from './dto/product-list-item.response';
 import { ProductsListQueryDto } from './dto/products-list.query';
+import { UpdateCategoryInput } from './dto/update-category.input';
 import { UpdateProductInput } from './dto/update-product.input';
 import { ProductsService } from './products.service';
 
@@ -104,6 +107,108 @@ export class ProductsController {
     @CurrentScope() scope: RequestScope,
   ): Promise<ProductCategorySummaryResponseDto[]> {
     return this.productsService.categoriesSummary(scope);
+  }
+
+  @Get('categories')
+  @ApiOperation({
+    summary: 'List product categories',
+    description:
+      'Returns all categories available for the selected unit ordered by sortOrder and name.',
+  })
+  @ApiOkResponse({
+    description: 'Categories listed successfully.',
+    type: CategoryDetailsResponseDto,
+    isArray: true,
+  })
+  listCategories(
+    @CurrentScope() scope: RequestScope,
+  ): Promise<CategoryDetailsResponseDto[]> {
+    return this.productsService.listCategories(scope);
+  }
+
+  @Get('categories/:id')
+  @ApiOperation({
+    summary: 'Get category details',
+    description: 'Returns one category and aggregated product counts.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category unique identifier.',
+    example: 'ae849d70-eef7-47f8-bf59-c52b32523f8f',
+  })
+  @ApiOkResponse({
+    description: 'Category fetched successfully.',
+    type: CategoryDetailsResponseDto,
+  })
+  getCategoryById(
+    @CurrentScope() scope: RequestScope,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<CategoryDetailsResponseDto> {
+    return this.productsService.getCategoryById(scope, id);
+  }
+
+  @Post('categories')
+  @ApiOperation({
+    summary: 'Create category',
+    description: 'Creates a new product category for the selected unit.',
+  })
+  @ApiCreatedResponse({
+    description: 'Category created successfully.',
+    type: CategoryDetailsResponseDto,
+  })
+  createCategory(
+    @CurrentScope() scope: RequestScope,
+    @Body() input: CreateCategoryInput,
+  ): Promise<CategoryDetailsResponseDto> {
+    return this.productsService.createCategory(scope, input);
+  }
+
+  @Patch('categories/:id')
+  @ApiOperation({
+    summary: 'Update category',
+    description: 'Updates an existing category in the selected unit.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category unique identifier.',
+    example: 'ae849d70-eef7-47f8-bf59-c52b32523f8f',
+  })
+  @ApiOkResponse({
+    description: 'Category updated successfully.',
+    type: CategoryDetailsResponseDto,
+  })
+  updateCategory(
+    @CurrentScope() scope: RequestScope,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() input: UpdateCategoryInput,
+  ): Promise<CategoryDetailsResponseDto> {
+    return this.productsService.updateCategory(scope, id, input);
+  }
+
+  @Delete('categories/:id')
+  @ApiOperation({
+    summary: 'Remove category',
+    description:
+      'Removes a category when it has no linked products in the selected unit.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category unique identifier.',
+    example: 'ae849d70-eef7-47f8-bf59-c52b32523f8f',
+  })
+  @ApiOkResponse({
+    description: 'Category removed successfully.',
+    schema: {
+      example: {
+        success: true,
+      },
+    },
+  })
+  removeCategory(
+    @CurrentScope() scope: RequestScope,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<{ success: true }> {
+    return this.productsService.removeCategory(scope, id);
   }
 
   @Get(':id')

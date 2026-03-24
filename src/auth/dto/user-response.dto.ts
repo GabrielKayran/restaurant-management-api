@@ -48,6 +48,29 @@ export class UserResponseDto {
   })
   unitRoles: UserUnitRoleDto[];
 
+  @ApiProperty({
+    example: 'unit-id',
+    nullable: true,
+    description:
+      'Unidade padrao resolvida automaticamente quando o usuario possui acesso a somente uma unidade ativa.',
+  })
+  defaultUnitId: string | null;
+
+  @ApiProperty({
+    example: 'Loja Centro',
+    nullable: true,
+    description:
+      'Nome da unidade padrao resolvida automaticamente quando aplicavel.',
+  })
+  defaultUnitName: string | null;
+
+  @ApiProperty({
+    example: false,
+    description:
+      'Indica se o front-end precisa solicitar selecao explicita de unidade.',
+  })
+  requiresUnitSelection: boolean;
+
   @ApiProperty({ example: '2026-03-14T13:00:00.000Z' })
   createdAt: Date;
 

@@ -1,6 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
-import { IsEmail, IsEnum, IsString, IsUUID, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+} from 'class-validator';
 
 export class CreateStaffInput {
   @ApiProperty({
@@ -38,10 +45,13 @@ export class CreateStaffInput {
   @IsEnum(UserRole, { message: 'validation.staff.roleInvalid' })
   role: UserRole;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'uuid-da-unidade',
-    description: 'Unidade onde o colaborador vai atuar',
+    description:
+      'Unidade onde o colaborador vai atuar. Opcional quando o tenant possui somente uma unidade ativa.',
+    required: false,
   })
+  @IsOptional()
   @IsUUID('4', { message: 'validation.staff.unitIdInvalid' })
-  unitId: string;
+  unitId?: string;
 }

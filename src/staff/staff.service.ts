@@ -47,6 +47,7 @@ export class StaffService {
     input: CreateStaffInput,
   ): Promise<StaffResponseDto> {
     const tenantId = this.getTenantIdOrThrow(creator);
+    const unitId = await this.resolveUnitIdForTenant(tenantId, input.unitId);
 
     const normalizedName = this.normalizationService.normalizeRequiredField(
       input.name,
@@ -59,7 +60,6 @@ export class StaffService {
       input.password,
       'senha',
     );
-    await this.ensureUnitInTenant(input.unitId, tenantId);
 
     const roleSet = await this.getCreatorRolesForTenant(creator.id, tenantId);
     this.validateRoleAssignment(roleSet, input.role, true);
@@ -119,13 +119,13 @@ export class StaffService {
           where: {
             userId_unitId_role: {
               userId: user.id,
-              unitId: input.unitId,
+              unitId,
               role: input.role,
             },
           },
           create: {
             userId: user.id,
-            unitId: input.unitId,
+            unitId,
             role: input.role,
           },
           update: {},
@@ -136,7 +136,7 @@ export class StaffService {
           name: user.name,
           email: user.email,
           tenantId,
-          unitId: input.unitId,
+          unitId,
           role: input.role,
           isNewUser: !existingUser,
         };
@@ -158,10 +158,10 @@ export class StaffService {
     input: CreateStaffInviteInput,
   ): Promise<StaffInviteResponseDto> {
     const tenantId = this.getTenantIdOrThrow(creator);
+    const unitId = await this.resolveUnitIdForTenant(tenantId, input.unitId);
     const normalizedEmail = this.normalizationService.normalizeEmail(
       input.email,
     );
-    await this.ensureUnitInTenant(input.unitId, tenantId);
 
     const creatorRoles = await this.getCreatorRolesForTenant(
       creator.id,
@@ -172,7 +172,7 @@ export class StaffService {
     const pendingInvite = await this.prisma.staffInvite.findFirst({
       where: {
         tenantId,
-        unitId: input.unitId,
+        unitId,
         email: normalizedEmail,
         role: input.role,
         status: StaffInviteStatus.PENDING,
@@ -193,7 +193,7 @@ export class StaffService {
     const invite = await this.prisma.staffInvite.create({
       data: {
         tenantId,
-        unitId: input.unitId,
+        unitId,
         email: normalizedEmail,
         role: input.role,
         tokenHash: this.hashInviteToken(inviteToken),
@@ -557,6 +557,36 @@ export class StaffService {
     if (!unit) {
       throw new NotFoundException('errors.scope.unitNotInTenant');
     }
+  }
+
+  private async resolveUnitIdForTenant(
+    tenantId: string,
+    unitId?: string,
+  ): Promise<string> {
+    if (unitId) {
+      await this.ensureUnitInTenant(unitId, tenantId);
+      return unitId;
+    }
+
+    const units = await this.prisma.restaurantUnit.findMany({
+      where: {
+        tenantId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+      },
+      take: 2,
+      orderBy: {
+        id: 'asc',
+      },
+    });
+
+    if (units.length === 1) {
+      return units[0].id;
+    }
+
+    throw new BadRequestException('errors.scope.unitSelectionRequired');
   }
 
   private async getCreatorRolesForTenant(

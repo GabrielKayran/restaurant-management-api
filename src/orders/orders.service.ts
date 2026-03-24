@@ -30,6 +30,11 @@ type ProductRow = {
   name: string;
   basePrice: Prisma.Decimal;
   isActive: boolean;
+  prices: Array<{
+    price: Prisma.Decimal;
+    startsAt: Date | null;
+    endsAt: Date | null;
+  }>;
 };
 
 @Injectable()
@@ -419,7 +424,20 @@ export class OrdersService {
         unitId,
         id: { in: items.map((item) => item.productId) },
       },
-      select: { id: true, name: true, basePrice: true, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        basePrice: true,
+        isActive: true,
+        prices: {
+          select: {
+            price: true,
+            startsAt: true,
+            endsAt: true,
+          },
+          orderBy: [{ startsAt: 'desc' }, { price: 'asc' }],
+        },
+      },
     });
 
     if (products.length !== items.length) {
@@ -514,7 +532,7 @@ export class OrdersService {
         : { optionData: [], optionsTotalPerUnit: 0 };
 
       const unitPrice =
-        decimalToNumberOrZero(product.basePrice) +
+        this.resolveSalePrice(product.basePrice, product.prices) +
         decimalToNumberOrZero(variant?.priceDelta) +
         optionsTotalPerUnit;
       const totalPrice = unitPrice * item.quantity;
@@ -534,5 +552,24 @@ export class OrdersService {
     }
 
     return { itemData, subtotal };
+  }
+
+  private resolveSalePrice(
+    basePrice: Prisma.Decimal,
+    prices: Array<{
+      price: Prisma.Decimal;
+      startsAt: Date | null;
+      endsAt: Date | null;
+    }>,
+    referenceDate: Date = new Date(),
+  ): number {
+    const activeScheduledPrice = prices.find((price) => {
+      const startsAt = price.startsAt?.getTime() ?? Number.NEGATIVE_INFINITY;
+      const endsAt = price.endsAt?.getTime() ?? Number.POSITIVE_INFINITY;
+      const reference = referenceDate.getTime();
+      return reference >= startsAt && reference <= endsAt;
+    });
+
+    return decimalToNumberOrZero(activeScheduledPrice?.price ?? basePrice);
   }
 }

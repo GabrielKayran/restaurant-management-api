@@ -12,6 +12,7 @@ import { ProductsModule } from './products/products.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CashRegisterModule } from './cash-register/cash-register.module';
 import { CommonModule } from './common/common.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CommonModule } from './common/common.module';
     OrdersModule,
     TablesModule,
     ProductsModule,
+    CustomersModule,
     PaymentsModule,
     CashRegisterModule,
   ],

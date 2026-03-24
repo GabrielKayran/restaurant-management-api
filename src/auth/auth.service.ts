@@ -193,6 +193,7 @@ export class AuthService {
                 id: true,
                 name: true,
                 tenantId: true,
+                isActive: true,
               },
             },
           },
@@ -204,18 +205,38 @@ export class AuthService {
       throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
+    const activeUnitRoles = user.unitRoles.filter(
+      (unitRole) => unitRole.unit.isActive,
+    );
+    const uniqueActiveUnits = [
+      ...new Map(
+        activeUnitRoles.map((unitRole) => [
+          unitRole.unit.id,
+          {
+            id: unitRole.unit.id,
+            name: unitRole.unit.name,
+          },
+        ]),
+      ).values(),
+    ];
+    const defaultUnit =
+      uniqueActiveUnits.length === 1 ? uniqueActiveUnits[0] : null;
+
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       isActive: user.isActive,
       tenantRoles: user.tenantRoles,
-      unitRoles: user.unitRoles.map((unitRole) => ({
+      unitRoles: activeUnitRoles.map((unitRole) => ({
         id: unitRole.unit.id,
         name: unitRole.unit.name,
         tenantId: unitRole.unit.tenantId,
         role: unitRole.role,
       })),
+      defaultUnitId: defaultUnit?.id ?? null,
+      defaultUnitName: defaultUnit?.name ?? null,
+      requiresUnitSelection: uniqueActiveUnits.length > 1,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

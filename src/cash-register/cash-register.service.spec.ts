@@ -8,7 +8,11 @@ import { CashRegisterService } from './cash-register.service';
 describe('CashRegisterService', () => {
   let service: CashRegisterService;
   let prisma: {
-    cashRegister: { findFirst: jest.Mock; update: jest.Mock };
+    cashRegister: {
+      findFirst: jest.Mock;
+      update: jest.Mock;
+      create: jest.Mock;
+    };
     payment: {
       findMany: jest.Mock;
       aggregate: jest.Mock;
@@ -29,6 +33,7 @@ describe('CashRegisterService', () => {
       cashRegister: {
         findFirst: jest.fn(),
         update: jest.fn(),
+        create: jest.fn(),
       },
       payment: {
         findMany: jest.fn(),
@@ -83,6 +88,37 @@ describe('CashRegisterService', () => {
       expect(result.totalOrders).toBe(2);
       expect(result.averageTicket).toBe(75);
       expect(result.pendingPayments).toBe(20);
+    });
+  });
+
+  describe('open', () => {
+    it('throws BadRequestException when a register is already open', async () => {
+      prisma.cashRegister.findFirst.mockResolvedValue({ id: 'register-1' });
+
+      await expect(service.open(scope, { openingFloat: 50 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('opens a new register with the informed opening float', async () => {
+      prisma.cashRegister.findFirst.mockResolvedValue(null);
+      prisma.cashRegister.create.mockResolvedValue({ id: 'register-2' });
+
+      const result = await service.open(scope, { openingFloat: 75.5 });
+
+      expect(result).toEqual({
+        registerId: 'register-2',
+        openingFloat: 75.5,
+      });
+      expect(prisma.cashRegister.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            unitId: scope.unitId,
+            openedById: scope.userId,
+            status: CashRegisterStatus.OPEN,
+          }),
+        }),
+      );
     });
   });
 

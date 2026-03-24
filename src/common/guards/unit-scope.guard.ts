@@ -37,7 +37,23 @@ export class UnitScopeGuard implements CanActivate {
     const rawHeader = request.headers[UnitScopeGuard.UNIT_HEADER];
     const unitId = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
 
-    if (!unitId || !this.isUuid(unitId)) {
+    if (!unitId) {
+      const resolvedUnitId = await this.resolveSingleUnitId(user.id, tenantId);
+
+      if (!resolvedUnitId) {
+        throw new ForbiddenException('errors.scope.unitSelectionRequired');
+      }
+
+      request.scope = {
+        userId: user.id,
+        tenantId,
+        unitId: resolvedUnitId,
+      };
+
+      return true;
+    }
+
+    if (!this.isUuid(unitId)) {
       throw new ForbiddenException('errors.scope.unitHeaderRequired');
     }
 
@@ -76,5 +92,30 @@ export class UnitScopeGuard implements CanActivate {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
       value,
     );
+  }
+
+  private async resolveSingleUnitId(
+    userId: string,
+    tenantId: string,
+  ): Promise<string | null> {
+    const unitRoles = await this.prisma.userUnitRole.findMany({
+      where: {
+        userId,
+        unit: {
+          tenantId,
+          isActive: true,
+        },
+      },
+      select: {
+        unitId: true,
+      },
+      distinct: ['unitId'],
+      take: 2,
+      orderBy: {
+        unitId: 'asc',
+      },
+    });
+
+    return unitRoles.length === 1 ? unitRoles[0].unitId : null;
   }
 }

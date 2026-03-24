@@ -11,6 +11,7 @@
   },
   "scope": {
     "unitHeaderRequired": "O cabecalho x-unit-id e obrigatorio e deve ser um UUID valido.",
+    "unitSelectionRequired": "Selecione uma unidade para continuar.",
     "unitAccessDenied": "Voce nao tem acesso a unidade solicitada neste tenant.",
     "unitNotInTenant": "Unidade nao encontrada ou nao pertence a este tenant."
   },
@@ -46,6 +47,7 @@
   },
   "cashRegister": {
     "notOpen": "Nenhum caixa aberto encontrado para esta unidade.",
+    "alreadyOpen": "Ja existe um caixa aberto para esta unidade.",
     "negativeClosing": "O valor de fechamento nao pode ser negativo."
   },
   "staff": {
