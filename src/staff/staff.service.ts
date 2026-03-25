@@ -10,6 +10,7 @@ import { Prisma, StaffInviteStatus, UserRole } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { PasswordService } from '../auth/password.service';
 import { AuthenticatedUser } from '../auth/models/authenticated-user.model';
+import { AuditLoggerService } from '../common/services/audit-logger.service';
 import { NormalizationService } from '../common/services/normalization.service';
 import { AcceptStaffInviteInput } from './dto/accept-staff-invite.input';
 import { CreateStaffInput } from './dto/create-staff.input';
@@ -40,6 +41,7 @@ export class StaffService {
     private readonly prisma: PrismaService,
     private readonly passwordService: PasswordService,
     private readonly normalizationService: NormalizationService,
+    private readonly auditLogger: AuditLoggerService,
   ) {}
 
   async createStaff(
@@ -65,7 +67,7 @@ export class StaffService {
     this.validateRoleAssignment(roleSet, input.role, true);
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const staff = await this.prisma.$transaction(async (tx) => {
         const existingUser = await tx.user.findUnique({
           where: {
             email: normalizedEmail,
@@ -141,6 +143,22 @@ export class StaffService {
           isNewUser: !existingUser,
         };
       });
+
+      this.auditLogger.log({
+        action: 'staff.created',
+        actorUserId: creator.id,
+        tenantId,
+        unitId,
+        targetType: 'user',
+        targetId: staff.userId,
+        details: {
+          role: staff.role,
+          isNewUser: staff.isNewUser,
+          email: staff.email,
+        },
+      });
+
+      return staff;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -211,10 +229,27 @@ export class StaffService {
       },
     });
 
-    return {
+    const response = {
       ...invite,
       inviteToken,
     };
+
+    this.auditLogger.log({
+      action: 'staff.invited',
+      actorUserId: creator.id,
+      tenantId,
+      unitId,
+      targetType: 'staff_invite',
+      targetId: invite.id,
+      details: {
+        email: invite.email,
+        role: invite.role,
+        status: invite.status,
+        expiresAt: invite.expiresAt.toISOString(),
+      },
+    });
+
+    return response;
   }
 
   async acceptInvite(input: AcceptStaffInviteInput): Promise<StaffResponseDto> {
@@ -258,7 +293,7 @@ export class StaffService {
       'senha',
     );
 
-    return this.prisma.$transaction(async (tx) => {
+    const staff = await this.prisma.$transaction(async (tx) => {
       const existingUser = await tx.user.findUnique({
         where: {
           email: invite.email,
@@ -357,6 +392,22 @@ export class StaffService {
         isNewUser: !existingUser,
       };
     });
+
+    this.auditLogger.log({
+      action: 'staff.invite_accepted',
+      actorUserId: staff.userId,
+      tenantId: staff.tenantId,
+      unitId: staff.unitId,
+      targetType: 'user',
+      targetId: staff.userId,
+      details: {
+        role: staff.role,
+        email: staff.email,
+        isNewUser: staff.isNewUser,
+      },
+    });
+
+    return staff;
   }
 
   async listStaff(creator: AuthenticatedUser): Promise<StaffListItemDto[]> {
@@ -480,13 +531,28 @@ export class StaffService {
       },
     });
 
-    return {
+    const response = {
       userId: updatedUser.id,
       name: updatedUser.name,
       email: updatedUser.email,
       isActive: updatedUser.isActive,
       tenantRoles: updatedUser.tenantRoles.map((tenantRole) => tenantRole.role),
     };
+
+    this.auditLogger.log({
+      action: 'staff.status_updated',
+      actorUserId: creator.id,
+      tenantId,
+      targetType: 'user',
+      targetId: response.userId,
+      details: {
+        isActive: response.isActive,
+        tenantRoles: response.tenantRoles,
+        email: response.email,
+      },
+    });
+
+    return response;
   }
 
   private validateRoleAssignment(

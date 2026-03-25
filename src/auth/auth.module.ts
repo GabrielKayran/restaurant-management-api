@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { PasswordService } from './password.service';
 import { SecurityConfig } from '../common/configs/config.interface';
+import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { SecurityConfig } from '../common/configs/config.interface';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PasswordService],
+  providers: [AuthService, JwtStrategy, PasswordService, AuthRateLimitGuard],
   exports: [AuthService],
 })
 export class AuthModule {}

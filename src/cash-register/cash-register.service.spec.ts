@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CashRegisterStatus, Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RequestScope } from '../common/models/request-scope.model';
+import { AuditLoggerService } from '../common/services/audit-logger.service';
 import { CloseCashRegisterInput } from './dto/close-cash-register.input';
 import { CashRegisterService } from './cash-register.service';
 
@@ -21,6 +22,7 @@ describe('CashRegisterService', () => {
       findUnique: jest.Mock;
     };
   };
+  let auditLogger: { log: jest.Mock };
 
   const scope: RequestScope = {
     userId: 'user-1',
@@ -44,7 +46,14 @@ describe('CashRegisterService', () => {
       },
     };
 
-    service = new CashRegisterService(prisma as unknown as PrismaService);
+    auditLogger = {
+      log: jest.fn(),
+    };
+
+    service = new CashRegisterService(
+      prisma as unknown as PrismaService,
+      auditLogger as unknown as AuditLoggerService,
+    );
   });
 
   describe('getSummary', () => {

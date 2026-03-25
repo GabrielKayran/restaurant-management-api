@@ -47,4 +47,12 @@ describe('NormalizationService', () => {
   it('returns undefined for optional blank fields', () => {
     expect(service.normalizeOptionalField('   ')).toBeUndefined();
   });
+
+  it('returns null for nullable blank fields', () => {
+    expect(service.normalizeNullableField('   ')).toBeNull();
+    expect(service.normalizeNullableField(undefined)).toBeUndefined();
+    expect(service.normalizeNullableField('  34999990000  ')).toBe(
+      '34999990000',
+    );
+  });
 });

@@ -30,6 +30,15 @@ export class NormalizationService {
     return normalizedValue ? normalizedValue : undefined;
   }
 
+  normalizeNullableField(value?: string | null): string | null | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    const normalizedValue = value?.trim();
+    return normalizedValue ? normalizedValue : null;
+  }
+
   slugify(value: string): string {
     return value
       .normalize('NFD')

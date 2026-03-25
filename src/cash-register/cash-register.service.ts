@@ -8,6 +8,7 @@ import { PrismaService } from 'nestjs-prisma';
 import { RequestScope } from '../common/models/request-scope.model';
 import { Messages } from '../common/i18n/messages';
 import { PaginationResponse } from '../common/pagination';
+import { AuditLoggerService } from '../common/services/audit-logger.service';
 import { decimalToNumberOrZero } from '../common/utils/decimal.util';
 import { resolveDateRange } from '../common/utils/date-range.util';
 import { CloseCashRegisterInput } from './dto/close-cash-register.input';
@@ -19,7 +20,10 @@ import { PaymentMethodSummaryResponseDto } from './dto/payment-method-summary.re
 
 @Injectable()
 export class CashRegisterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogger: AuditLoggerService,
+  ) {}
 
   async open(
     scope: RequestScope,
@@ -55,10 +59,24 @@ export class CashRegisterService {
       },
     });
 
-    return {
+    const response = {
       registerId: register.id,
       openingFloat,
     };
+
+    this.auditLogger.log({
+      action: 'cash_register.opened',
+      actorUserId: scope.userId,
+      tenantId: scope.tenantId,
+      unitId: scope.unitId,
+      targetType: 'cash_register',
+      targetId: response.registerId,
+      details: {
+        openingFloat: response.openingFloat,
+      },
+    });
+
+    return response;
   }
 
   async getSummary(
@@ -325,9 +343,23 @@ export class CashRegisterService {
       },
     });
 
-    return {
+    const response = {
       registerId: register.id,
       closingValue,
     };
+
+    this.auditLogger.log({
+      action: 'cash_register.closed',
+      actorUserId: scope.userId,
+      tenantId: scope.tenantId,
+      unitId: scope.unitId,
+      targetType: 'cash_register',
+      targetId: response.registerId,
+      details: {
+        closingValue: response.closingValue,
+      },
+    });
+
+    return response;
   }
 }

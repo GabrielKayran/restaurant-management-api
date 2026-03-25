@@ -4,13 +4,16 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { RateLimit } from './decorators/rate-limit.decorator';
 import { RefreshInput } from './dto/refresh.input';
+import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LoginInput } from './dto/login.input';
 import { SignupInput } from './dto/signup.input';
@@ -38,6 +41,11 @@ export class AuthController {
       },
     },
   })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many signup attempts from the same client.',
+  })
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit({ key: 'auth:signup', limit: 3, windowMs: 10 * 60 * 1000 })
   signup(@Body() input: SignupInput): Promise<Token> {
     return this.authService.createUser(input);
   }
@@ -58,6 +66,11 @@ export class AuthController {
     },
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many login attempts from the same client.',
+  })
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit({ key: 'auth:login', limit: 5, windowMs: 60 * 1000 })
   login(@Body() input: LoginInput): Promise<Token> {
     return this.authService.login(input.email, input.password);
   }
@@ -79,6 +92,11 @@ export class AuthController {
     },
   })
   @ApiUnauthorizedResponse({ description: 'Invalid or expired refresh token.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many refresh attempts from the same client.',
+  })
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit({ key: 'auth:refresh', limit: 20, windowMs: 60 * 1000 })
   refresh(@Body() input: RefreshInput): Token {
     return this.authService.refreshToken(input.refreshToken);
   }

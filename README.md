@@ -34,6 +34,10 @@ O sistema esta sendo conduzido para um MVP vendavel de restaurante/hamburgueria 
 - `POST /auth/login`
 - `POST /auth/refresh`
 - `GET /auth/me`
+- `GET /settings/restaurant`
+- `PATCH /settings/restaurant`
+- `GET /settings/unit`
+- `PATCH /settings/unit`
 - `POST /staff`
 - `POST /staff/invite`
 - `POST /staff/accept-invite`
@@ -88,6 +92,14 @@ O sistema esta sendo conduzido para um MVP vendavel de restaurante/hamburgueria 
 - O header `x-unit-id` continua suportado.
 - Quando o usuario possui acesso a somente uma unidade ativa, o backend resolve a unidade automaticamente.
 - Quando o usuario possui mais de uma unidade ativa, a selecao explicita de unidade continua obrigatoria.
+
+## Regras de seguranca do MVP
+
+- `POST /auth/signup` possui rate limit de `3` tentativas por `10` minutos por cliente.
+- `POST /auth/login` possui rate limit de `5` tentativas por `1` minuto por cliente.
+- `POST /auth/refresh` possui rate limit de `20` tentativas por `1` minuto por cliente.
+- Respostas limitadas retornam status `429` com headers `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` e `X-RateLimit-Reset`.
+- Acoes sensiveis do MVP geram log de auditoria estruturado: configuracoes, equipe, pagamentos e caixa.
 
 ## Exemplos de payload
 
@@ -158,6 +170,25 @@ O sistema esta sendo conduzido para um MVP vendavel de restaurante/hamburgueria 
     "state": "MG",
     "zipCode": "38400100"
   }
+}
+```
+
+### `PATCH /settings/restaurant`
+
+```json
+{
+  "name": "Hamburgueria Central",
+  "phone": "34999990000",
+  "document": "12345678000199"
+}
+```
+
+### `PATCH /settings/unit`
+
+```json
+{
+  "name": "Unidade Centro",
+  "phone": "34999991111"
 }
 ```
 

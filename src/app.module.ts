@@ -13,6 +13,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { CashRegisterModule } from './cash-register/cash-register.module';
 import { CommonModule } from './common/common.module';
 import { CustomersModule } from './customers/customers.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { CustomersModule } from './customers/customers.module';
     CustomersModule,
     PaymentsModule,
     CashRegisterModule,
+    SettingsModule,
   ],
   controllers: [AppController],
 })

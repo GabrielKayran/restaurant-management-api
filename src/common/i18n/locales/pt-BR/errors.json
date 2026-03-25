@@ -5,6 +5,7 @@
     "emailAlreadyInUse": "Este email ja esta em uso.",
     "tenantOrUnitNameAlreadyExists": "Ja existe um tenant ou unidade com este nome. Escolha um nome diferente para o tenant ou unidade.",
     "identityAlreadyInUse": "Email ou identificador do tenant/unidade ja esta em uso.",
+    "tooManyRequests": "Muitas tentativas em pouco tempo. Aguarde antes de tentar novamente.",
     "tenantContextRequired": "Contexto do tenant ausente no token. Faca login novamente.",
     "tenantContextMissing": "Contexto de tenant ausente. Realize o login novamente.",
     "noPermission": "Voce nao possui permissao para realizar esta acao."
@@ -49,6 +50,9 @@
     "notOpen": "Nenhum caixa aberto encontrado para esta unidade.",
     "alreadyOpen": "Ja existe um caixa aberto para esta unidade.",
     "negativeClosing": "O valor de fechamento nao pode ser negativo."
+  },
+  "settings": {
+    "tenantNotFound": "Tenant nao encontrado para o contexto autenticado."
   },
   "staff": {
     "inactiveEmail": "Ja existe um usuario inativo com este e-mail. Reative a conta antes de vincular.",

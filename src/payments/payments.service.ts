@@ -14,6 +14,7 @@ import { PrismaService } from 'nestjs-prisma';
 import { RequestScope } from '../common/models/request-scope.model';
 import { Messages } from '../common/i18n/messages';
 import { PaginationResponse } from '../common/pagination';
+import { AuditLoggerService } from '../common/services/audit-logger.service';
 import { decimalToNumberOrZero } from '../common/utils/decimal.util';
 import { resolveDateRange } from '../common/utils/date-range.util';
 import { CreatePaymentInput } from './dto/create-payment.input';
@@ -22,7 +23,10 @@ import { PaymentsListQueryDto } from './dto/payments-list.query';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogger: AuditLoggerService,
+  ) {}
 
   async list(
     scope: RequestScope,
@@ -215,7 +219,7 @@ export class PaymentsService {
       throw new NotFoundException(Messages.PAYMENT_LOAD_ERROR);
     }
 
-    return {
+    const response = {
       id: payment.id,
       orderId: payment.orderId,
       orderCode: payment.order.code,
@@ -226,5 +230,31 @@ export class PaymentsService {
       paidAt: payment.paidAt,
       createdAt: payment.createdAt,
     };
+
+    this.logPaymentCreated(scope, response);
+
+    return response;
+  }
+
+  private logPaymentCreated(
+    scope: RequestScope,
+    payment: PaymentItemResponseDto,
+  ): void {
+    this.auditLogger.log({
+      action: 'payment.created',
+      actorUserId: scope.userId,
+      tenantId: scope.tenantId,
+      unitId: scope.unitId,
+      targetType: 'payment',
+      targetId: payment.id,
+      details: {
+        orderId: payment.orderId,
+        orderCode: payment.orderCode,
+        method: payment.method,
+        status: payment.status,
+        amount: payment.amount,
+        reference: payment.reference,
+      },
+    });
   }
 }

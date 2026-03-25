@@ -6,6 +6,7 @@ const MESSAGE_KEYS = {
   TENANT_OR_UNIT_NAME_ALREADY_EXISTS:
     'errors.auth.tenantOrUnitNameAlreadyExists',
   IDENTITY_ALREADY_IN_USE: 'errors.auth.identityAlreadyInUse',
+  TOO_MANY_REQUESTS: 'errors.auth.tooManyRequests',
   TENANT_CONTEXT_REQUIRED: 'errors.auth.tenantContextRequired',
   TENANT_CONTEXT_MISSING: 'errors.auth.tenantContextMissing',
   UNIT_HEADER_REQUIRED: 'errors.scope.unitHeaderRequired',
@@ -36,6 +37,7 @@ const MESSAGE_KEYS = {
   CASH_REGISTER_NOT_OPEN: 'errors.cashRegister.notOpen',
   CASH_REGISTER_ALREADY_OPEN: 'errors.cashRegister.alreadyOpen',
   CASH_REGISTER_NEGATIVE_CLOSING: 'errors.cashRegister.negativeClosing',
+  TENANT_NOT_FOUND: 'errors.settings.tenantNotFound',
   STAFF_INACTIVE_EMAIL: 'errors.staff.inactiveEmail',
   STAFF_ROLE_ALREADY_EXISTS: 'errors.staff.roleAlreadyExists',
   INVITE_PENDING_EXISTS: 'errors.staff.invitePendingExists',
@@ -70,6 +72,8 @@ const PT_BR_FALLBACK: Record<MessageKey, string> = {
     'Ja existe um tenant ou unidade com este nome. Escolha um nome diferente para o tenant ou unidade.',
   'errors.auth.identityAlreadyInUse':
     'Email ou identificador do tenant/unidade ja esta em uso.',
+  'errors.auth.tooManyRequests':
+    'Muitas tentativas em pouco tempo. Aguarde antes de tentar novamente.',
   'errors.auth.tenantContextRequired':
     'Contexto do tenant ausente no token. Faca login novamente.',
   'errors.auth.tenantContextMissing':
@@ -118,6 +122,8 @@ const PT_BR_FALLBACK: Record<MessageKey, string> = {
     'Ja existe um caixa aberto para esta unidade.',
   'errors.cashRegister.negativeClosing':
     'O valor de fechamento nao pode ser negativo.',
+  'errors.settings.tenantNotFound':
+    'Tenant nao encontrado para o contexto autenticado.',
   'errors.staff.inactiveEmail':
     'Ja existe um usuario inativo com este e-mail. Reative a conta antes de vincular.',
   'errors.staff.roleAlreadyExists':
@@ -294,6 +300,10 @@ export class Messages {
     return translate(MESSAGE_KEYS.CASH_REGISTER_NEGATIVE_CLOSING);
   }
 
+  static get TENANT_NOT_FOUND(): string {
+    return translate(MESSAGE_KEYS.TENANT_NOT_FOUND);
+  }
+
   static get STAFF_INACTIVE_EMAIL(): string {
     return translate(MESSAGE_KEYS.STAFF_INACTIVE_EMAIL);
   }
@@ -356,6 +366,10 @@ export class Messages {
 
   static get TENANT_CONTEXT_MISSING(): string {
     return translate(MESSAGE_KEYS.TENANT_CONTEXT_MISSING);
+  }
+
+  static get TOO_MANY_REQUESTS(): string {
+    return translate(MESSAGE_KEYS.TOO_MANY_REQUESTS);
   }
 
   static get UNIT_NOT_IN_TENANT(): string {

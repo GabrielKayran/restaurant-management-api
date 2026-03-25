@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RequestScope } from '../common/models/request-scope.model';
+import { AuditLoggerService } from '../common/services/audit-logger.service';
 import { PaymentsService } from './payments.service';
 
 describe('PaymentsService', () => {
@@ -19,6 +20,7 @@ describe('PaymentsService', () => {
     };
     $transaction: jest.Mock;
   };
+  let auditLogger: { log: jest.Mock };
 
   const scope: RequestScope = {
     userId: 'user-1',
@@ -36,7 +38,14 @@ describe('PaymentsService', () => {
       $transaction: jest.fn(),
     };
 
-    service = new PaymentsService(prisma as unknown as PrismaService);
+    auditLogger = {
+      log: jest.fn(),
+    };
+
+    service = new PaymentsService(
+      prisma as unknown as PrismaService,
+      auditLogger as unknown as AuditLoggerService,
+    );
   });
 
   describe('create', () => {
