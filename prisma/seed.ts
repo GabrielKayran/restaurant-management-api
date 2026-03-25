@@ -1,4 +1,5 @@
 import {
+  FulfillmentMethod,
   PaymentMethod,
   PaymentStatus,
   PrismaClient,
@@ -17,9 +18,14 @@ async function main() {
   await prisma.orderItemOption.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.deliveryZoneCoverageRule.deleteMany();
+  await prisma.deliveryFeeRule.deleteMany();
+  await prisma.deliveryZone.deleteMany();
   await prisma.tableReservation.deleteMany();
   await prisma.tableSession.deleteMany();
   await prisma.restaurantTable.deleteMany();
+  await prisma.productAvailabilityWindow.deleteMany();
+  await prisma.unitOperatingHour.deleteMany();
   await prisma.productPrice.deleteMany();
   await prisma.productOption.deleteMany();
   await prisma.productOptionGroup.deleteMany();
@@ -81,6 +87,10 @@ async function main() {
             name: 'Loja Centro',
             slug: 'loja-centro',
             phone: '3433310001',
+            publicDescription:
+              'Hamburguer artesanal com retirada e delivery proprio.',
+            latitude: -18.9141,
+            longitude: -48.2749,
           },
           {
             name: 'Loja Shopping',
@@ -110,6 +120,67 @@ async function main() {
         role: UserRole.MANAGER,
       },
     ],
+  });
+
+  await prisma.unitOperatingHour.createMany({
+    data: [
+      {
+        unitId: unitCentro.id,
+        fulfillmentType: FulfillmentMethod.TAKEAWAY,
+        dayOfWeek: 1,
+        opensAtMinutes: 660,
+        closesAtMinutes: 1380,
+      },
+      {
+        unitId: unitCentro.id,
+        fulfillmentType: FulfillmentMethod.DELIVERY,
+        dayOfWeek: 1,
+        opensAtMinutes: 690,
+        closesAtMinutes: 1380,
+      },
+      {
+        unitId: unitCentro.id,
+        fulfillmentType: FulfillmentMethod.TAKEAWAY,
+        dayOfWeek: 5,
+        opensAtMinutes: 660,
+        closesAtMinutes: 1439,
+      },
+      {
+        unitId: unitCentro.id,
+        fulfillmentType: FulfillmentMethod.DELIVERY,
+        dayOfWeek: 5,
+        opensAtMinutes: 690,
+        closesAtMinutes: 1439,
+      },
+    ],
+  });
+
+  await prisma.deliveryZone.create({
+    data: {
+      unitId: unitCentro.id,
+      name: 'Centro',
+      description: 'Area central e bairros proximos.',
+      coverageRules: {
+        create: [
+          {
+            zipCodePrefix: '38400',
+            sortOrder: 0,
+          },
+        ],
+      },
+      feeRules: {
+        create: [
+          {
+            fee: 8,
+            minimumOrder: 0,
+          },
+          {
+            fee: 5,
+            minimumOrder: 60,
+          },
+        ],
+      },
+    },
   });
 
   const burgers = await prisma.category.create({
@@ -156,6 +227,16 @@ async function main() {
                 { name: 'Ovo', priceDelta: 2.5 },
               ],
             },
+          },
+        ],
+      },
+      availabilityWindows: {
+        create: [
+          {
+            fulfillmentType: FulfillmentMethod.DELIVERY,
+            dayOfWeek: 5,
+            startsAtMinutes: 1080,
+            endsAtMinutes: 1439,
           },
         ],
       },

@@ -3,20 +3,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { FulfillmentMethod, Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
+import { MemoryCacheService } from '../common/services/memory-cache.service';
 import { Messages } from '../common/i18n/messages';
 import { RequestScope } from '../common/models/request-scope.model';
 import { PaginationResponse } from '../common/pagination';
 import { decimalToNumberOrZero } from '../common/utils/decimal.util';
 import { CategoryDetailsResponseDto } from './dto/category-details.response';
 import { ProductCategorySummaryResponseDto } from './dto/category-summary.response';
+import { CreateProductAvailabilityWindowInput } from './dto/product-availability.input';
 import { CreateCategoryInput } from './dto/create-category.input';
 import { CreateProductInput } from './dto/create-product.input';
 import { CreateProductOptionGroupInput } from './dto/product-option-group.input';
 import { CreateProductPriceInput } from './dto/product-price.input';
 import { CreateProductVariantInput } from './dto/product-variant.input';
 import {
+  ProductAvailabilityWindowResponseDto,
   ProductDetailsResponseDto,
   ProductOptionGroupResponseDto,
   ProductOptionResponseDto,
@@ -38,6 +41,8 @@ type ProductDetailsRow = {
   costPrice: Prisma.Decimal | null;
   imageUrl: string | null;
   isActive: boolean;
+  isAvailableForTakeaway: boolean;
+  isAvailableForDelivery: boolean;
   createdAt: Date;
   updatedAt: Date;
   category: { name: string } | null;
@@ -69,11 +74,21 @@ type ProductDetailsRow = {
     startsAt: Date | null;
     endsAt: Date | null;
   }>;
+  availabilityWindows: Array<{
+    id: string;
+    fulfillmentType: FulfillmentMethod;
+    dayOfWeek: number;
+    startsAtMinutes: number;
+    endsAtMinutes: number;
+  }>;
 };
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: MemoryCacheService,
+  ) {}
 
   async list(
     scope: RequestScope,
@@ -330,6 +345,8 @@ export class ProductsService {
       },
     });
 
+    await this.invalidatePublicMenuCache(scope.unitId);
+
     return this.getCategoryById(scope, category.id);
   }
 
@@ -349,6 +366,8 @@ export class ProductsService {
         sortOrder: input.sortOrder,
       },
     });
+
+    await this.invalidatePublicMenuCache(scope.unitId);
 
     return this.getCategoryById(scope, id);
   }
@@ -378,6 +397,8 @@ export class ProductsService {
       },
     });
 
+    await this.invalidatePublicMenuCache(scope.unitId);
+
     return { success: true };
   }
 
@@ -400,6 +421,8 @@ export class ProductsService {
         costPrice: true,
         imageUrl: true,
         isActive: true,
+        isAvailableForTakeaway: true,
+        isAvailableForDelivery: true,
         createdAt: true,
         updatedAt: true,
         category: {
@@ -447,6 +470,20 @@ export class ProductsService {
           },
           orderBy: [{ startsAt: 'desc' }, { price: 'asc' }],
         },
+        availabilityWindows: {
+          select: {
+            id: true,
+            fulfillmentType: true,
+            dayOfWeek: true,
+            startsAtMinutes: true,
+            endsAtMinutes: true,
+          },
+          orderBy: [
+            { fulfillmentType: 'asc' },
+            { dayOfWeek: 'asc' },
+            { startsAtMinutes: 'asc' },
+          ],
+        },
       },
     });
 
@@ -478,6 +515,8 @@ export class ProductsService {
             : undefined,
         imageUrl: input.imageUrl?.trim(),
         isActive: input.isActive ?? true,
+        isAvailableForTakeaway: input.isAvailableForTakeaway ?? true,
+        isAvailableForDelivery: input.isAvailableForDelivery ?? true,
         variants:
           input.variants && input.variants.length > 0
             ? {
@@ -496,11 +535,21 @@ export class ProductsService {
                 create: this.mapPriceCreateInput(input.prices),
               }
             : undefined,
+        availabilityWindows:
+          input.availabilityWindows && input.availabilityWindows.length > 0
+            ? {
+                create: this.mapAvailabilityWindowCreateInput(
+                  input.availabilityWindows,
+                ),
+              }
+            : undefined,
       },
       select: {
         id: true,
       },
     });
+
+    await this.invalidatePublicMenuCache(scope.unitId);
 
     return this.getById(scope, created.id);
   }
@@ -529,18 +578,23 @@ export class ProductsService {
           : undefined,
       imageUrl: input.imageUrl?.trim(),
       isActive: input.isActive,
+      isAvailableForTakeaway: input.isAvailableForTakeaway,
+      isAvailableForDelivery: input.isAvailableForDelivery,
     };
 
     const hasNestedUpdates =
       input.variants !== undefined ||
       input.optionGroups !== undefined ||
-      input.prices !== undefined;
+      input.prices !== undefined ||
+      input.availabilityWindows !== undefined;
 
     if (!hasNestedUpdates) {
       await this.prisma.product.update({
         where: { id },
         data: baseData,
       });
+
+      await this.invalidatePublicMenuCache(scope.unitId);
 
       return this.getById(scope, id);
     }
@@ -611,7 +665,24 @@ export class ProductsService {
           });
         }
       }
+
+      if (input.availabilityWindows !== undefined) {
+        await tx.productAvailabilityWindow.deleteMany({
+          where: { productId: id },
+        });
+
+        if (input.availabilityWindows.length > 0) {
+          await tx.productAvailabilityWindow.createMany({
+            data: this.mapAvailabilityWindowCreateManyInput(
+              id,
+              input.availabilityWindows,
+            ),
+          });
+        }
+      }
     });
+
+    await this.invalidatePublicMenuCache(scope.unitId);
 
     return this.getById(scope, id);
   }
@@ -639,6 +710,8 @@ export class ProductsService {
         },
       });
 
+      await this.invalidatePublicMenuCache(scope.unitId);
+
       return {
         success: true,
         mode: 'deactivated',
@@ -664,6 +737,9 @@ export class ProductsService {
       await tx.productPrice.deleteMany({
         where: { productId: id },
       });
+      await tx.productAvailabilityWindow.deleteMany({
+        where: { productId: id },
+      });
       await tx.productVariant.deleteMany({
         where: { productId: id },
       });
@@ -674,6 +750,8 @@ export class ProductsService {
         where: { id },
       });
     });
+
+    await this.invalidatePublicMenuCache(scope.unitId);
 
     return {
       success: true,
@@ -708,6 +786,8 @@ export class ProductsService {
       marginPercentage,
       imageUrl: product.imageUrl,
       isActive: product.isActive,
+      isAvailableForTakeaway: product.isAvailableForTakeaway,
+      isAvailableForDelivery: product.isAvailableForDelivery,
       variants: product.variants.map(
         (variant): ProductVariantResponseDto => ({
           id: variant.id,
@@ -742,6 +822,15 @@ export class ProductsService {
           price: decimalToNumberOrZero(price.price),
           startsAt: price.startsAt,
           endsAt: price.endsAt,
+        }),
+      ),
+      availabilityWindows: product.availabilityWindows.map(
+        (window): ProductAvailabilityWindowResponseDto => ({
+          id: window.id,
+          fulfillmentType: window.fulfillmentType,
+          dayOfWeek: window.dayOfWeek,
+          startsAtMinutes: window.startsAtMinutes,
+          endsAtMinutes: window.endsAtMinutes,
         }),
       ),
       createdAt: product.createdAt,
@@ -789,7 +878,15 @@ export class ProductsService {
   }
 
   private validateProductConfiguration(
-    input: Pick<UpdateProductInput, 'variants' | 'optionGroups' | 'prices'>,
+    input: Pick<
+      UpdateProductInput,
+      | 'variants'
+      | 'optionGroups'
+      | 'prices'
+      | 'availabilityWindows'
+      | 'isAvailableForTakeaway'
+      | 'isAvailableForDelivery'
+    >,
   ): void {
     if (input.variants) {
       const defaultVariants = input.variants.filter(
@@ -830,6 +927,25 @@ export class ProductsService {
         ) {
           throw new BadRequestException(
             'A data final do preco precisa ser posterior a data inicial.',
+          );
+        }
+      }
+    }
+
+    if (
+      input.isAvailableForTakeaway === false &&
+      input.isAvailableForDelivery === false
+    ) {
+      throw new BadRequestException(
+        'O produto deve permanecer disponivel para ao menos um fulfillment publico.',
+      );
+    }
+
+    if (input.availabilityWindows) {
+      for (const window of input.availabilityWindows) {
+        if (window.endsAtMinutes <= window.startsAtMinutes) {
+          throw new BadRequestException(
+            'A janela de disponibilidade precisa terminar depois do inicio.',
           );
         }
       }
@@ -903,6 +1019,30 @@ export class ProductsService {
     }));
   }
 
+  private mapAvailabilityWindowCreateInput(
+    windows: CreateProductAvailabilityWindowInput[],
+  ): Prisma.ProductAvailabilityWindowCreateWithoutProductInput[] {
+    return windows.map((window) => ({
+      fulfillmentType: window.fulfillmentType,
+      dayOfWeek: window.dayOfWeek,
+      startsAtMinutes: window.startsAtMinutes,
+      endsAtMinutes: window.endsAtMinutes,
+    }));
+  }
+
+  private mapAvailabilityWindowCreateManyInput(
+    productId: string,
+    windows: CreateProductAvailabilityWindowInput[],
+  ): Prisma.ProductAvailabilityWindowCreateManyInput[] {
+    return windows.map((window) => ({
+      productId,
+      fulfillmentType: window.fulfillmentType,
+      dayOfWeek: window.dayOfWeek,
+      startsAtMinutes: window.startsAtMinutes,
+      endsAtMinutes: window.endsAtMinutes,
+    }));
+  }
+
   private async assertCategory(
     unitId: string,
     categoryId?: string,
@@ -923,6 +1063,17 @@ export class ProductsService {
 
     if (!category) {
       throw new BadRequestException(Messages.CATEGORY_NOT_FOUND);
+    }
+  }
+
+  private async invalidatePublicMenuCache(unitId: string): Promise<void> {
+    const unit = await this.prisma.restaurantUnit.findUnique({
+      where: { id: unitId },
+      select: { slug: true },
+    });
+
+    if (unit?.slug) {
+      this.cache.invalidate(`public-menu:${unit.slug}`);
     }
   }
 }

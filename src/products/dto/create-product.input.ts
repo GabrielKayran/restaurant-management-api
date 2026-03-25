@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { CreateProductOptionGroupInput } from './product-option-group.input';
 import { CreateProductPriceInput } from './product-price.input';
+import { CreateProductAvailabilityWindowInput } from './product-availability.input';
 import { CreateProductVariantInput } from './product-variant.input';
 
 export class CreateProductInput {
@@ -70,6 +71,18 @@ export class CreateProductInput {
   @IsBoolean({ message: 'validation.products.isActiveBoolean' })
   isActive: boolean;
 
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean({ message: 'validation.products.isAvailableForTakeawayBoolean' })
+  isAvailableForTakeaway?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean({ message: 'validation.products.isAvailableForDeliveryBoolean' })
+  isAvailableForDelivery?: boolean;
+
   @ApiPropertyOptional({ type: [CreateProductVariantInput] })
   @IsOptional()
   @IsArray({ message: 'As variantes devem ser uma lista.' })
@@ -87,4 +100,10 @@ export class CreateProductInput {
   @IsArray({ message: 'Os precos agendados devem ser uma lista.' })
   @Type(() => CreateProductPriceInput)
   prices?: CreateProductPriceInput[];
+
+  @ApiPropertyOptional({ type: [CreateProductAvailabilityWindowInput] })
+  @IsOptional()
+  @IsArray({ message: 'As janelas de disponibilidade devem ser uma lista.' })
+  @Type(() => CreateProductAvailabilityWindowInput)
+  availabilityWindows?: CreateProductAvailabilityWindowInput[];
 }

@@ -13,6 +13,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { CashRegisterModule } from './cash-register/cash-register.module';
 import { CommonModule } from './common/common.module';
 import { CustomersModule } from './customers/customers.module';
+import { PublicOrderingModule } from './public-ordering/public-ordering.module';
 import { SettingsModule } from './settings/settings.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { SettingsModule } from './settings/settings.module';
     CustomersModule,
     PaymentsModule,
     CashRegisterModule,
+    PublicOrderingModule,
     SettingsModule,
   ],
   controllers: [AppController],

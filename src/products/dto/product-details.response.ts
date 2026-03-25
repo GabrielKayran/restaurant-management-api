@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { FulfillmentMethod } from '@prisma/client';
 
 export class ProductVariantResponseDto {
   @ApiProperty({ example: 'variant-id' })
@@ -69,6 +70,23 @@ export class ProductPriceResponseDto {
 
   @ApiProperty({ example: '2026-03-23T15:00:00.000Z', nullable: true })
   endsAt: Date | null;
+}
+
+export class ProductAvailabilityWindowResponseDto {
+  @ApiProperty({ example: 'availability-window-id' })
+  id: string;
+
+  @ApiProperty({ enum: FulfillmentMethod, example: FulfillmentMethod.DELIVERY })
+  fulfillmentType: FulfillmentMethod;
+
+  @ApiProperty({ example: 5 })
+  dayOfWeek: number;
+
+  @ApiProperty({ example: 1080 })
+  startsAtMinutes: number;
+
+  @ApiProperty({ example: 1380 })
+  endsAtMinutes: number;
 }
 
 export class ProductDetailsResponseDto {
@@ -152,6 +170,18 @@ export class ProductDetailsResponseDto {
   isActive: boolean;
 
   @ApiProperty({
+    description: 'Indicates if the product can be ordered for takeaway.',
+    example: true,
+  })
+  isAvailableForTakeaway: boolean;
+
+  @ApiProperty({
+    description: 'Indicates if the product can be ordered for delivery.',
+    example: true,
+  })
+  isAvailableForDelivery: boolean;
+
+  @ApiProperty({
     type: [ProductVariantResponseDto],
     description: 'Configured product variants.',
   })
@@ -168,6 +198,12 @@ export class ProductDetailsResponseDto {
     description: 'Scheduled product prices.',
   })
   prices: ProductPriceResponseDto[];
+
+  @ApiProperty({
+    type: [ProductAvailabilityWindowResponseDto],
+    description: 'Optional availability windows for public ordering.',
+  })
+  availabilityWindows: ProductAvailabilityWindowResponseDto[];
 
   @ApiProperty({
     description: 'Record creation timestamp.',

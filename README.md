@@ -6,7 +6,8 @@ Estado atual do projeto:
 - onboarding e autenticacao com JWT
 - operacao single-unit first sem remover multiunidade do schema
 - equipe, catalogo, clientes, mesas, pedidos, pagamentos, caixa e dashboard
-- schema pronto para evolucao futura de delivery, estoque e integracoes
+- cardapio publico, retirada e delivery proprio com pedido idempotente
+- schema pronto para evolucao futura de integracoes externas
 
 ## Stack
 
@@ -24,6 +25,8 @@ O sistema esta sendo conduzido para um MVP vendavel de restaurante/hamburgueria 
 - resolucao automatica de unidade quando o usuario possui acesso a somente uma unidade ativa
 - catalogo com categorias, variantes, opcionais e precos agendados
 - operacao de salao, balcao e retirada
+- cardapio online por link/QR Code com checkout publico
+- delivery proprio com taxa por zona/regra e tracking
 - caixa com abertura e fechamento
 - dashboard operacional
 
@@ -38,6 +41,8 @@ O sistema esta sendo conduzido para um MVP vendavel de restaurante/hamburgueria 
 - `PATCH /settings/restaurant`
 - `GET /settings/unit`
 - `PATCH /settings/unit`
+- `GET /settings/unit/ordering`
+- `PATCH /settings/unit/ordering`
 - `POST /staff`
 - `POST /staff/invite`
 - `POST /staff/accept-invite`
@@ -54,6 +59,10 @@ O sistema esta sendo conduzido para um MVP vendavel de restaurante/hamburgueria 
 - `PATCH /products/categories/:id`
 - `DELETE /products/categories/:id`
 - `GET /products/categories/summary`
+- `GET /public/stores/:unitSlug/menu`
+- `POST /public/stores/:unitSlug/cart/quote`
+- `POST /public/stores/:unitSlug/orders`
+- `GET /public/orders/:publicToken/status`
 - `GET /customers`
 - `GET /customers/:id`
 - `POST /customers`
@@ -70,6 +79,7 @@ O sistema esta sendo conduzido para um MVP vendavel de restaurante/hamburgueria 
 - `PATCH /orders/:id`
 - `PATCH /orders/:id/status`
 - `POST /orders/:id/cancel`
+- `GET /orders/delivery/board`
 - `GET /payments`
 - `POST /payments`
 - `POST /cash-register/open`
@@ -242,6 +252,9 @@ npm run start:dev
 
 Com a aplicacao rodando:
 - `http://localhost:3000/api`
+
+Documentacao funcional complementar:
+- `docs/public-ordering-mvp.md`
 
 ## Testes
 

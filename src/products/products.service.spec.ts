@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
+import { MemoryCacheService } from '../common/services/memory-cache.service';
 import { RequestScope } from '../common/models/request-scope.model';
 import { CreateProductInput } from './dto/create-product.input';
 import { UpdateProductInput } from './dto/update-product.input';
@@ -24,6 +25,7 @@ describe('ProductsService', () => {
       update: jest.Mock;
       delete: jest.Mock;
     };
+    restaurantUnit: { findUnique: jest.Mock };
     orderItem: { count: jest.Mock };
     productVariant: { deleteMany: jest.Mock; createMany: jest.Mock };
     productOptionGroup: {
@@ -33,8 +35,10 @@ describe('ProductsService', () => {
     };
     productOption: { deleteMany: jest.Mock };
     productPrice: { deleteMany: jest.Mock; createMany: jest.Mock };
+    productAvailabilityWindow: { deleteMany: jest.Mock; createMany: jest.Mock };
     $transaction: jest.Mock;
   };
+  let cache: { invalidate: jest.Mock };
 
   const scope: RequestScope = {
     userId: 'user-1',
@@ -73,6 +77,9 @@ describe('ProductsService', () => {
     category: overrides.categoryId ? { name: 'Burgers' } : null,
     variants: [],
     optionGroups: [],
+    availabilityWindows: [],
+    isAvailableForTakeaway: true,
+    isAvailableForDelivery: true,
   });
 
   beforeEach(() => {
@@ -91,6 +98,9 @@ describe('ProductsService', () => {
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
+      },
+      restaurantUnit: {
+        findUnique: jest.fn().mockResolvedValue({ slug: 'loja-centro' }),
       },
       orderItem: {
         count: jest.fn(),
@@ -111,10 +121,21 @@ describe('ProductsService', () => {
         deleteMany: jest.fn(),
         createMany: jest.fn(),
       },
+      productAvailabilityWindow: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+      },
       $transaction: jest.fn(),
     };
 
-    service = new ProductsService(prisma as unknown as PrismaService);
+    cache = {
+      invalidate: jest.fn(),
+    };
+
+    service = new ProductsService(
+      prisma as unknown as PrismaService,
+      cache as unknown as MemoryCacheService,
+    );
   });
 
   describe('getById', () => {
@@ -292,6 +313,7 @@ describe('ProductsService', () => {
           productOptionGroup: prisma.productOptionGroup,
           productOption: prisma.productOption,
           productPrice: prisma.productPrice,
+          productAvailabilityWindow: prisma.productAvailabilityWindow,
           productVariant: prisma.productVariant,
           product: prisma.product,
         }),

@@ -18,8 +18,10 @@ import { CurrentScope } from '../common/decorators/current-scope.decorator';
 import { UnitScopeGuard } from '../common/guards/unit-scope.guard';
 import { RequestScope } from '../common/models/request-scope.model';
 import { RestaurantSettingsResponseDto } from './dto/restaurant-settings.response';
+import { UnitOrderingSettingsResponseDto } from './dto/unit-ordering.response';
 import { UnitSettingsResponseDto } from './dto/unit-settings.response';
 import { UpdateRestaurantSettingsInput } from './dto/update-restaurant-settings.input';
+import { UpdateUnitOrderingInput } from './dto/update-unit-ordering.input';
 import { UpdateUnitSettingsInput } from './dto/update-unit-settings.input';
 import { SettingsService } from './settings.service';
 
@@ -103,5 +105,42 @@ export class SettingsController {
     @Body() input: UpdateUnitSettingsInput,
   ): Promise<UnitSettingsResponseDto> {
     return this.settingsService.updateUnit(scope, input);
+  }
+
+  @Get('unit/ordering')
+  @UseGuards(UnitScopeGuard)
+  @ApiUnitHeader()
+  @ApiOperation({
+    summary: 'Get public ordering settings',
+    description:
+      'Returns operational settings for the public catalog, delivery coverage, fee rules and opening hours.',
+  })
+  @ApiOkResponse({
+    description: 'Public ordering settings returned successfully.',
+    type: UnitOrderingSettingsResponseDto,
+  })
+  getUnitOrdering(
+    @CurrentScope() scope: RequestScope,
+  ): Promise<UnitOrderingSettingsResponseDto> {
+    return this.settingsService.getUnitOrdering(scope);
+  }
+
+  @Patch('unit/ordering')
+  @UseGuards(UnitScopeGuard)
+  @ApiUnitHeader()
+  @ApiOperation({
+    summary: 'Update public ordering settings',
+    description:
+      'Updates public menu settings, opening hours, delivery coverage and fee rules for the selected unit.',
+  })
+  @ApiOkResponse({
+    description: 'Public ordering settings updated successfully.',
+    type: UnitOrderingSettingsResponseDto,
+  })
+  updateUnitOrdering(
+    @CurrentScope() scope: RequestScope,
+    @Body() input: UpdateUnitOrderingInput,
+  ): Promise<UnitOrderingSettingsResponseDto> {
+    return this.settingsService.updateUnitOrdering(scope, input);
   }
 }

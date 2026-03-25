@@ -3,6 +3,7 @@ import { PrismaService } from 'nestjs-prisma';
 import { AuthenticatedUser } from '../auth/models/authenticated-user.model';
 import { RequestScope } from '../common/models/request-scope.model';
 import { AuditLoggerService } from '../common/services/audit-logger.service';
+import { MemoryCacheService } from '../common/services/memory-cache.service';
 import { NormalizationService } from '../common/services/normalization.service';
 import { SettingsService } from './settings.service';
 
@@ -23,6 +24,7 @@ describe('SettingsService', () => {
     normalizeNullableField: jest.Mock;
   };
   let auditLogger: { log: jest.Mock };
+  let cache: { invalidate: jest.Mock };
 
   const user = {
     id: 'user-1',
@@ -57,11 +59,15 @@ describe('SettingsService', () => {
     auditLogger = {
       log: jest.fn(),
     };
+    cache = {
+      invalidate: jest.fn(),
+    };
 
     service = new SettingsService(
       prisma as unknown as PrismaService,
       normalizationService as unknown as NormalizationService,
       auditLogger as unknown as AuditLoggerService,
+      cache as unknown as MemoryCacheService,
     );
   });
 
