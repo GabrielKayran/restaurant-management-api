@@ -19,6 +19,7 @@ import { AuditLoggerService } from '../common/services/audit-logger.service';
 import { MemoryCacheService } from '../common/services/memory-cache.service';
 import { RequestScope } from '../common/models/request-scope.model';
 import { decimalToNumberOrZero } from '../common/utils/decimal.util';
+import { resolveSalePrice } from '../common/utils/sale-price.util';
 import {
   sanitizePhone,
   sanitizeStateCode,
@@ -839,10 +840,7 @@ export class PublicOrderingService {
           : product.variants.find((entry) => entry.isDefault) ?? null;
       const { options, optionData, optionsTotalPerUnit } =
         this.resolveSelectedOptions(product, item.options ?? []);
-      const basePrice = this.resolveSalePrice(
-        product.basePrice,
-        product.prices,
-      );
+      const basePrice = resolveSalePrice(product.basePrice, product.prices);
       const unitPrice =
         basePrice +
         decimalToNumberOrZero(variant?.priceDelta ?? null) +
@@ -1330,7 +1328,7 @@ export class PublicOrderingService {
       name: product.name,
       description: product.description,
       imageUrl: product.imageUrl,
-      salePrice: this.resolveSalePrice(product.basePrice, product.prices),
+      salePrice: resolveSalePrice(product.basePrice, product.prices),
       isAvailableForTakeaway: product.isAvailableForTakeaway,
       isAvailableForDelivery: product.isAvailableForDelivery,
       isCurrentlyAvailableForTakeaway:
@@ -1646,25 +1644,6 @@ export class PublicOrderingService {
     if (normalized === 'thu') return 4;
     if (normalized === 'fri') return 5;
     return 6;
-  }
-
-  private resolveSalePrice(
-    basePrice: Prisma.Decimal,
-    prices: Array<{
-      price: Prisma.Decimal;
-      startsAt: Date | null;
-      endsAt: Date | null;
-    }>,
-    referenceDate: Date = new Date(),
-  ): number {
-    const activeScheduledPrice = prices.find((price) => {
-      const startsAt = price.startsAt?.getTime() ?? Number.NEGATIVE_INFINITY;
-      const endsAt = price.endsAt?.getTime() ?? Number.POSITIVE_INFINITY;
-      const reference = referenceDate.getTime();
-      return reference >= startsAt && reference <= endsAt;
-    });
-
-    return decimalToNumberOrZero(activeScheduledPrice?.price ?? basePrice);
   }
 
   private computeDistanceKm(

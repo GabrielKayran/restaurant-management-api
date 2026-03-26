@@ -278,6 +278,80 @@ describe('OrdersService', () => {
         } as CreateOrderInput),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('applies active scheduled prices when calculating order totals', async () => {
+      const tx = {
+        order: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({ id: 'order-1' }),
+        },
+        product: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'product-1',
+              name: 'Burger',
+              basePrice: new Prisma.Decimal('10.00'),
+              isActive: true,
+              prices: [
+                {
+                  price: new Prisma.Decimal('7.50'),
+                  startsAt: null,
+                  endsAt: null,
+                },
+              ],
+            },
+          ]),
+        },
+        orderStatusHistory: { create: jest.fn() },
+      };
+
+      prisma.$transaction.mockImplementation((fn) => fn(tx));
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        code: 1,
+        type: OrderType.TAKEAWAY,
+        status: OrderStatus.PENDING,
+        notes: null,
+        createdAt: new Date(),
+        subtotal: new Prisma.Decimal('15.00'),
+        discount: new Prisma.Decimal('0.00'),
+        deliveryFee: new Prisma.Decimal('0.00'),
+        total: new Prisma.Decimal('15.00'),
+        customer: null,
+        table: null,
+        items: [
+          {
+            id: 'item-1',
+            productId: 'product-1',
+            productName: 'Burger',
+            variantName: null,
+            quantity: 2,
+            unitPrice: new Prisma.Decimal('7.50'),
+            totalPrice: new Prisma.Decimal('15.00'),
+            notes: null,
+            options: [],
+          },
+        ],
+        statusHistory: [],
+      });
+
+      const result = await service.create(scope, {
+        type: OrderType.TAKEAWAY,
+        items: [
+          { productId: 'product-1', quantity: 2 } as CreateOrderItemInput,
+        ],
+      } as CreateOrderInput);
+
+      const createPayload = tx.order.create.mock.calls[0][0].data;
+      const createdItem = createPayload.items.create[0];
+
+      expect(createPayload.subtotal.toString()).toBe('15');
+      expect(createPayload.total.toString()).toBe('15');
+      expect(createdItem.unitPrice.toString()).toBe('7.5');
+      expect(createdItem.totalPrice.toString()).toBe('15');
+      expect(result.items[0].unitPrice).toBe(7.5);
+      expect(result.total).toBe(15);
+    });
   });
 
   describe('update', () => {

@@ -27,16 +27,18 @@ import { CurrentScope } from '../common/decorators/current-scope.decorator';
 import { UnitScopeGuard } from '../common/guards/unit-scope.guard';
 import { RequestScope } from '../common/models/request-scope.model';
 import { PaginationResponse } from '../common/pagination';
-import { CategoryDetailsResponseDto } from './dto/category-details.response';
-import { ProductCategorySummaryResponseDto } from './dto/category-summary.response';
-import { CreateCategoryInput } from './dto/create-category.input';
-import { CreateProductInput } from './dto/create-product.input';
-import { ProductDetailsResponseDto } from './dto/product-details.response';
-import { ProductListItemResponseDto } from './dto/product-list-item.response';
-import { ProductsListQueryDto } from './dto/products-list.query';
-import { UpdateCategoryInput } from './dto/update-category.input';
-import { UpdateProductInput } from './dto/update-product.input';
-import { ProductsService } from './products.service';
+import {
+  CategoryDetailsResponseDto,
+  CreateCategoryInput,
+  CreateProductInput,
+  ProductCategorySummaryResponseDto,
+  ProductDetailsResponseDto,
+  ProductListItemResponseDto,
+  ProductsListQueryDto,
+  UpdateCategoryInput,
+  UpdateProductInput,
+} from './dto';
+import { ProductsService } from './services';
 
 @ApiTags('Products')
 @ApiBearerAuth()

@@ -10,6 +10,7 @@ import { PaginationResponse } from '../common/pagination';
 import { Messages } from '../common/i18n/messages';
 import { decimalToNumberOrZero } from '../common/utils/decimal.util';
 import { resolveDateRange } from '../common/utils/date-range.util';
+import { resolveSalePrice } from '../common/utils/sale-price.util';
 import { CreateOrderInput } from './dto/create-order.input';
 import {
   CreateOrderItemInput,
@@ -532,7 +533,7 @@ export class OrdersService {
         : { optionData: [], optionsTotalPerUnit: 0 };
 
       const unitPrice =
-        this.resolveSalePrice(product.basePrice, product.prices) +
+        resolveSalePrice(product.basePrice, product.prices) +
         decimalToNumberOrZero(variant?.priceDelta) +
         optionsTotalPerUnit;
       const totalPrice = unitPrice * item.quantity;
@@ -552,24 +553,5 @@ export class OrdersService {
     }
 
     return { itemData, subtotal };
-  }
-
-  private resolveSalePrice(
-    basePrice: Prisma.Decimal,
-    prices: Array<{
-      price: Prisma.Decimal;
-      startsAt: Date | null;
-      endsAt: Date | null;
-    }>,
-    referenceDate: Date = new Date(),
-  ): number {
-    const activeScheduledPrice = prices.find((price) => {
-      const startsAt = price.startsAt?.getTime() ?? Number.NEGATIVE_INFINITY;
-      const endsAt = price.endsAt?.getTime() ?? Number.POSITIVE_INFINITY;
-      const reference = referenceDate.getTime();
-      return reference >= startsAt && reference <= endsAt;
-    });
-
-    return decimalToNumberOrZero(activeScheduledPrice?.price ?? basePrice);
   }
 }
