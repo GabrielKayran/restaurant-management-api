@@ -24,13 +24,15 @@ import { ApiUnitHeader } from '../common/decorators/api-unit-header.decorator';
 import { CurrentScope } from '../common/decorators/current-scope.decorator';
 import { UnitScopeGuard } from '../common/guards/unit-scope.guard';
 import { RequestScope } from '../common/models/request-scope.model';
-import { DeliveryBoardQueryDto } from './dto/delivery-board.query';
-import { DeliveryBoardResponseDto } from './dto/delivery-board.response';
-import { PublicCheckoutInput } from './dto/public-checkout.input';
-import { PublicCheckoutQuoteResponseDto } from './dto/public-checkout.response';
-import { PublicMenuResponseDto } from './dto/public-menu.response';
-import { PublicOrderTrackingResponseDto } from './dto/public-order-tracking.response';
-import { PublicOrderingService } from './public-ordering.service';
+import {
+  DeliveryBoardQueryDto,
+  DeliveryBoardResponseDto,
+  PublicCheckoutInput,
+  PublicCheckoutQuoteResponseDto,
+  PublicMenuResponseDto,
+  PublicOrderTrackingResponseDto,
+} from './dto';
+import { PublicOrderingService } from './services';
 
 @ApiTags('Public Ordering')
 @Controller('public')

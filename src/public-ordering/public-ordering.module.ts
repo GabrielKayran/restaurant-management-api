@@ -6,7 +6,15 @@ import {
   PublicOrderingController,
   PublicStoreCheckoutController,
 } from './public-ordering.controller';
-import { PublicOrderingService } from './public-ordering.service';
+import {
+  PublicCheckoutComputationService,
+  PublicCheckoutService,
+  PublicDeliveryBoardService,
+  PublicMenuService,
+  PublicOrderStatusService,
+  PublicOrderingContextService,
+  PublicOrderingService,
+} from './services';
 
 @Module({
   controllers: [
@@ -14,7 +22,17 @@ import { PublicOrderingService } from './public-ordering.service';
     PublicStoreCheckoutController,
     DeliveryAdminController,
   ],
-  providers: [PublicOrderingService, AuthRateLimitGuard, UnitScopeGuard],
+  providers: [
+    PublicOrderingService,
+    PublicOrderingContextService,
+    PublicMenuService,
+    PublicCheckoutComputationService,
+    PublicCheckoutService,
+    PublicOrderStatusService,
+    PublicDeliveryBoardService,
+    AuthRateLimitGuard,
+    UnitScopeGuard,
+  ],
   exports: [PublicOrderingService],
 })
 export class PublicOrderingModule {}
