@@ -46,47 +46,7 @@ export class OrdersRealtimeGateway implements OnGatewayConnection {
 
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const token = this.extractToken(client);
-      const unitId = this.extractUnitId(client);
-
-      if (!token) {
-        throw new UnauthorizedException('errors.auth.invalidCredentials');
-      }
-
-      if (!unitId) {
-        throw new ForbiddenException('errors.scope.unitHeaderRequired');
-      }
-
-      const payload = this.jwtService.verify<JwtDto>(token);
-      const userId = payload.sub ?? payload.userId;
-
-      if (!userId) {
-        throw new UnauthorizedException('errors.auth.invalidCredentials');
-      }
-
-      if (!payload.tenantId) {
-        throw new ForbiddenException('errors.auth.tenantContextRequired');
-      }
-
-      await this.authService.validateUser(userId);
-
-      const unitRole = await this.prisma.userUnitRole.findFirst({
-        where: {
-          userId,
-          unitId,
-          unit: {
-            tenantId: payload.tenantId,
-            isActive: true,
-          },
-        },
-        select: {
-          unitId: true,
-        },
-      });
-
-      if (!unitRole) {
-        throw new ForbiddenException('errors.scope.unitAccessDenied');
-      }
+      const { unitId, userId } = await this.authorizeConnection(client);
 
       client.data.userId = userId;
       client.data.unitId = unitId;
@@ -111,6 +71,54 @@ export class OrdersRealtimeGateway implements OnGatewayConnection {
 
   private buildUnitRoom(unitId: string): string {
     return `unit:${unitId}`;
+  }
+
+  private async authorizeConnection(
+    client: Socket,
+  ): Promise<{ userId: string; unitId: string }> {
+    const token = this.extractToken(client);
+    const unitId = this.extractUnitId(client);
+
+    if (!token) {
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
+    }
+
+    if (!unitId) {
+      throw new ForbiddenException('errors.scope.unitHeaderRequired');
+    }
+
+    const payload = this.jwtService.verify<JwtDto>(token);
+    const userId = payload.sub ?? payload.userId;
+
+    if (!userId) {
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
+    }
+
+    if (!payload.tenantId) {
+      throw new ForbiddenException('errors.auth.tenantContextRequired');
+    }
+
+    await this.authService.validateUser(userId);
+
+    const unitRole = await this.prisma.userUnitRole.findFirst({
+      where: {
+        userId,
+        unitId,
+        unit: {
+          tenantId: payload.tenantId,
+          isActive: true,
+        },
+      },
+      select: {
+        unitId: true,
+      },
+    });
+
+    if (!unitRole) {
+      throw new ForbiddenException('errors.scope.unitAccessDenied');
+    }
+
+    return { unitId, userId };
   }
 
   private extractToken(client: Socket): string | null {
