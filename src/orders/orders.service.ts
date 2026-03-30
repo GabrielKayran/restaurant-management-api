@@ -11,6 +11,7 @@ import { Messages } from '../common/i18n/messages';
 import { decimalToNumberOrZero } from '../common/utils/decimal.util';
 import { resolveDateRange } from '../common/utils/date-range.util';
 import { resolveSalePrice } from '../common/utils/sale-price.util';
+import { OrdersRealtimePublisher } from '../orders-realtime/orders-realtime.publisher';
 import { CreateOrderInput } from './dto/create-order.input';
 import {
   CreateOrderItemInput,
@@ -40,7 +41,10 @@ type ProductRow = {
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ordersRealtimePublisher: OrdersRealtimePublisher,
+  ) {}
 
   async list(
     scope: RequestScope,
@@ -251,6 +255,8 @@ export class OrdersService {
       return createdOrder.id;
     });
 
+    await this.ordersRealtimePublisher.publishOrderCreated(createdId);
+
     return this.getById(scope, createdId);
   }
 
@@ -298,7 +304,7 @@ export class OrdersService {
     id: string,
     input: UpdateOrderStatusInput,
   ): Promise<OrderDetailsResponseDto> {
-    const orderId = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findFirst({
         where: { id, unitId: scope.unitId },
         select: { id: true, status: true },
@@ -333,10 +339,18 @@ export class OrdersService {
         },
       });
 
-      return order.id;
+      return {
+        orderId: order.id,
+        previousStatus: order.status,
+      };
     });
 
-    return this.getById(scope, orderId);
+    await this.ordersRealtimePublisher.publishOrderStatusUpdated(
+      result.orderId,
+      result.previousStatus,
+    );
+
+    return this.getById(scope, result.orderId);
   }
 
   async cancel(

@@ -18,6 +18,7 @@ import {
   sanitizePhone,
   sanitizeTrimmedString,
 } from '../../common/utils/sanitize.util';
+import { OrdersRealtimePublisher } from '../../orders-realtime/orders-realtime.publisher';
 import {
   getTimeContext,
   hashPublicOrderPayload,
@@ -43,6 +44,7 @@ export class PublicCheckoutService {
     private readonly contextService: PublicOrderingContextService,
     private readonly computationService: PublicCheckoutComputationService,
     private readonly orderStatusService: PublicOrderStatusService,
+    private readonly ordersRealtimePublisher: OrdersRealtimePublisher,
   ) {}
 
   async quoteCheckout(
@@ -120,7 +122,7 @@ export class PublicCheckoutService {
     }
 
     try {
-      const publicToken = await this.prisma.$transaction(async (tx) => {
+      const createdOrder = await this.prisma.$transaction(async (tx) => {
         const insideExistingOrder = await tx.order.findFirst({
           where: {
             unitId: unit.id,
@@ -139,7 +141,10 @@ export class PublicCheckoutService {
             );
           }
 
-          return insideExistingOrder.publicToken;
+          return {
+            orderId: null,
+            publicToken: insideExistingOrder.publicToken,
+          };
         }
 
         const timeContext = getTimeContext(unit.orderingTimeZone);
@@ -210,7 +215,10 @@ export class PublicCheckoutService {
           },
         });
 
-        return createdOrder.publicToken ?? newPublicToken;
+        return {
+          orderId: createdOrder.id,
+          publicToken: createdOrder.publicToken ?? newPublicToken,
+        };
       });
 
       this.auditLogger.log({
@@ -219,7 +227,7 @@ export class PublicCheckoutService {
         tenantId: unit.tenantId,
         unitId: unit.id,
         targetType: 'order',
-        targetId: publicToken,
+        targetId: createdOrder.publicToken,
         details: {
           unitSlug,
           orderType: input.type,
@@ -227,7 +235,15 @@ export class PublicCheckoutService {
         },
       });
 
-      return this.orderStatusService.getPublicOrderStatus(publicToken);
+      if (createdOrder.orderId) {
+        await this.ordersRealtimePublisher.publishOrderCreated(
+          createdOrder.orderId,
+        );
+      }
+
+      return this.orderStatusService.getPublicOrderStatus(
+        createdOrder.publicToken,
+      );
     } catch (error) {
       this.logFailure('public.order.create.failed', error, {
         unitSlug,

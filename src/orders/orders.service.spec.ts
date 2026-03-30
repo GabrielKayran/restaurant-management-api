@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OrderStatus, OrderType, Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RequestScope } from '../common/models/request-scope.model';
+import { OrdersRealtimePublisher } from '../orders-realtime/orders-realtime.publisher';
 import { CreateOrderInput } from './dto/create-order.input';
 import { CreateOrderItemInput } from './dto/create-order-item.input';
 import { UpdateOrderInput } from './dto/update-order.input';
@@ -19,6 +20,10 @@ describe('OrdersService', () => {
     };
     restaurantTable: { findFirst: jest.Mock };
     $transaction: jest.Mock;
+  };
+  let ordersRealtimePublisher: {
+    publishOrderCreated: jest.Mock;
+    publishOrderStatusUpdated: jest.Mock;
   };
 
   const scope: RequestScope = {
@@ -41,7 +46,15 @@ describe('OrdersService', () => {
       $transaction: jest.fn(),
     };
 
-    service = new OrdersService(prisma as unknown as PrismaService);
+    ordersRealtimePublisher = {
+      publishOrderCreated: jest.fn().mockResolvedValue(undefined),
+      publishOrderStatusUpdated: jest.fn().mockResolvedValue(undefined),
+    };
+
+    service = new OrdersService(
+      prisma as unknown as PrismaService,
+      ordersRealtimePublisher as unknown as OrdersRealtimePublisher,
+    );
   });
 
   describe('getById', () => {
@@ -351,6 +364,9 @@ describe('OrdersService', () => {
       expect(createdItem.totalPrice.toString()).toBe('15');
       expect(result.items[0].unitPrice).toBe(7.5);
       expect(result.total).toBe(15);
+      expect(ordersRealtimePublisher.publishOrderCreated).toHaveBeenCalledWith(
+        'order-1',
+      );
     });
   });
 
@@ -442,6 +458,55 @@ describe('OrdersService', () => {
         } as UpdateOrderStatusInput),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('publishes realtime event after updating status', async () => {
+      const tx = {
+        order: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'order-1',
+            status: OrderStatus.PENDING,
+          }),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        orderStatusHistory: { create: jest.fn().mockResolvedValue({}) },
+      };
+
+      prisma.$transaction.mockImplementation((fn) => fn(tx));
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        code: 1,
+        type: OrderType.DELIVERY,
+        status: OrderStatus.CONFIRMED,
+        notes: null,
+        createdAt: new Date('2026-03-15T18:25:33.417Z'),
+        subtotal: new Prisma.Decimal('50.00'),
+        discount: new Prisma.Decimal('0.00'),
+        deliveryFee: new Prisma.Decimal('5.00'),
+        total: new Prisma.Decimal('55.00'),
+        customer: { name: 'Maria Oliveira' },
+        table: null,
+        items: [],
+        statusHistory: [],
+      });
+
+      const result = await service.updateStatus(scope, 'order-1', {
+        status: OrderStatus.CONFIRMED,
+        reason: 'Kitchen accepted the order',
+      } as UpdateOrderStatusInput);
+
+      expect(tx.order.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: OrderStatus.CONFIRMED,
+            confirmedAt: expect.any(Date),
+          }),
+        }),
+      );
+      expect(
+        ordersRealtimePublisher.publishOrderStatusUpdated,
+      ).toHaveBeenCalledWith('order-1', OrderStatus.PENDING);
+      expect(result.status).toBe(OrderStatus.CONFIRMED);
+    });
   });
 
   describe('cancel', () => {
@@ -483,6 +548,9 @@ describe('OrdersService', () => {
           data: expect.objectContaining({ status: OrderStatus.CANCELLED }),
         }),
       );
+      expect(
+        ordersRealtimePublisher.publishOrderStatusUpdated,
+      ).toHaveBeenCalledWith('order-1', OrderStatus.CONFIRMED);
       expect(result.status).toBe(OrderStatus.CANCELLED);
     });
   });

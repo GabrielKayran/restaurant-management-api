@@ -30,6 +30,6 @@ import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, PasswordService, AuthRateLimitGuard],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

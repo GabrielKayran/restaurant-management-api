@@ -8,13 +8,14 @@ import { StaffModule } from './staff/staff.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { OrdersModule } from './orders/orders.module';
 import { TablesModule } from './tables/tables.module';
-import { ProductsModule } from './products/products.module';
+import { ProductsModule } from './products';
 import { PaymentsModule } from './payments/payments.module';
 import { CashRegisterModule } from './cash-register/cash-register.module';
 import { CommonModule } from './common/common.module';
 import { CustomersModule } from './customers/customers.module';
-import { PublicOrderingModule } from './public-ordering/public-ordering.module';
+import { PublicOrderingModule } from './public-ordering';
 import { SettingsModule } from './settings/settings.module';
+import { OrdersRealtimeModule } from './orders-realtime/orders-realtime.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { SettingsModule } from './settings/settings.module';
         ],
       },
     }),
+    OrdersRealtimeModule,
     AuthModule,
     StaffModule,
     DashboardModule,

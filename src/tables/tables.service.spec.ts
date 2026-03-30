@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OrderStatus, OrderType, TableReservationStatus } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RequestScope } from '../common/models/request-scope.model';
+import { OrdersRealtimePublisher } from '../orders-realtime/orders-realtime.publisher';
 import { OpenTableOrderInput } from './dto/open-table-order.input';
 import { OpenTableSessionInput } from './dto/open-table-session.input';
 import { ReserveTableInput } from './dto/reserve-table.input';
@@ -16,6 +17,9 @@ describe('TablesService', () => {
     order: { findFirst: jest.Mock; create: jest.Mock };
     orderStatusHistory: { create: jest.Mock };
     $transaction: jest.Mock;
+  };
+  let ordersRealtimePublisher: {
+    publishOrderCreated: jest.Mock;
   };
 
   const scope: RequestScope = {
@@ -48,7 +52,14 @@ describe('TablesService', () => {
       $transaction: jest.fn(),
     };
 
-    service = new TablesService(prisma as unknown as PrismaService);
+    ordersRealtimePublisher = {
+      publishOrderCreated: jest.fn().mockResolvedValue(undefined),
+    };
+
+    service = new TablesService(
+      prisma as unknown as PrismaService,
+      ordersRealtimePublisher as unknown as OrdersRealtimePublisher,
+    );
   });
 
   describe('openSession', () => {
@@ -139,6 +150,9 @@ describe('TablesService', () => {
             status: OrderStatus.PENDING,
           }),
         }),
+      );
+      expect(ordersRealtimePublisher.publishOrderCreated).toHaveBeenCalledWith(
+        'order-new',
       );
     });
 

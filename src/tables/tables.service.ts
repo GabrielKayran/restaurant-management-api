@@ -13,6 +13,7 @@ import { PrismaService } from 'nestjs-prisma';
 import { RequestScope } from '../common/models/request-scope.model';
 import { Messages } from '../common/i18n/messages';
 import { decimalToNumberOrZero } from '../common/utils/decimal.util';
+import { OrdersRealtimePublisher } from '../orders-realtime/orders-realtime.publisher';
 import { OpenTableOrderInput } from './dto/open-table-order.input';
 import { OpenTableSessionInput } from './dto/open-table-session.input';
 import { ReserveTableInput } from './dto/reserve-table.input';
@@ -22,7 +23,10 @@ import { TablesSummaryResponseDto } from './dto/table-summary.response';
 
 @Injectable()
 export class TablesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ordersRealtimePublisher: OrdersRealtimePublisher,
+  ) {}
 
   async getSummary(scope: RequestScope): Promise<TablesSummaryResponseDto> {
     const tables = await this.buildTableCards(scope.unitId);
@@ -163,6 +167,8 @@ export class TablesService {
 
       return created;
     });
+
+    await this.ordersRealtimePublisher.publishOrderCreated(result.id);
 
     return {
       orderId: result.id,

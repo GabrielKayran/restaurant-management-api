@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { AuditLoggerService } from '../../common/services/audit-logger.service';
+import { OrdersRealtimePublisher } from '../../orders-realtime/orders-realtime.publisher';
 import { hashPublicOrderPayload } from '../helpers';
 import { PublicCheckoutInput } from '../dto';
 import { PublicCheckoutComputationService } from './public-checkout-computation.service';
@@ -25,6 +26,7 @@ describe('PublicCheckoutService', () => {
   let contextService: { getUnitBySlug: jest.Mock };
   let computationService: { buildCheckout: jest.Mock };
   let orderStatusService: { getPublicOrderStatus: jest.Mock };
+  let ordersRealtimePublisher: { publishOrderCreated: jest.Mock };
 
   const unit = {
     id: 'unit-1',
@@ -90,6 +92,9 @@ describe('PublicCheckoutService', () => {
     orderStatusService = {
       getPublicOrderStatus: jest.fn(),
     };
+    ordersRealtimePublisher = {
+      publishOrderCreated: jest.fn().mockResolvedValue(undefined),
+    };
 
     service = new PublicCheckoutService(
       prisma as unknown as PrismaService,
@@ -97,6 +102,7 @@ describe('PublicCheckoutService', () => {
       contextService as unknown as PublicOrderingContextService,
       computationService as unknown as PublicCheckoutComputationService,
       orderStatusService as unknown as PublicOrderStatusService,
+      ordersRealtimePublisher as unknown as OrdersRealtimePublisher,
     );
   });
 
@@ -126,6 +132,7 @@ describe('PublicCheckoutService', () => {
     expect(orderStatusService.getPublicOrderStatus).toHaveBeenCalledWith(
       'token-1',
     );
+    expect(ordersRealtimePublisher.publishOrderCreated).not.toHaveBeenCalled();
   });
 
   it('rejects idempotency key reuse with different payload', async () => {
@@ -206,6 +213,9 @@ describe('PublicCheckoutService', () => {
       }),
     );
     expect(auditLogger.log).toHaveBeenCalledTimes(1);
+    expect(ordersRealtimePublisher.publishOrderCreated).toHaveBeenCalledWith(
+      'order-1',
+    );
     expect(orderStatusService.getPublicOrderStatus).toHaveBeenCalledWith(
       'token-new',
     );
